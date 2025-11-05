@@ -1,0 +1,12 @@
+numpy
+pandas
+matplotlib
+seaborn
+networkx
+scikit-learn
+umap-learn
+torch
+transformers
+jupyter
+ipykernel
+tqdm

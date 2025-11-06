@@ -10,3 +10,5 @@ transformers
 jupyter
 ipykernel
 tqdm
+
+pytest

@@ -21,7 +21,7 @@ tokenizer = AutoTokenizer.from_pretrained(PRETRAINED_MODELS_DIR)
 model = AutoModelForMaskedLM.from_pretrained(PRETRAINED_MODELS_DIR)
 model.eval()  # set model to evaluation mode
 
-# get k of k-mer for the tokenizer
+# get k of k-mer from the tokenizer
 special_tokens = set(tokenizer.all_special_tokens)
 vocab_keys = [k for k in tokenizer.get_vocab().keys() if k not in special_tokens]
 first_kmer = vocab_keys[0]
@@ -30,7 +30,7 @@ kmer_length = len(first_kmer)
 # max sequence length for tokenizer
 max_seq_length = kmer_length * (tokenizer.model_max_length - 1)
 
-# parse entire assembly file
+# parse entire assembly file into single string
 cpe_genome = parse_fasta(path_to_cpe_genome)
 
 # split into list that the tokenizer can handle
@@ -47,6 +47,7 @@ for i, chunk in enumerate(tokenizer_friendly_inputs, 1):
     print(f"Chunk {i}/{len(tokenizer_friendly_inputs)} embedding took {elapsed_time:.4f} seconds")
 
     all_chunk_embeddings.append(chunk_embedding)
+
 # stack all chunk embeddings into a single tensor
 all_chunk_embeddings_tensor = torch.vstack(all_chunk_embeddings)
 

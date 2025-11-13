@@ -1,4 +1,5 @@
-data/
+inputs/
+outputs/
 pretrained_models/
 
 **.egg-info

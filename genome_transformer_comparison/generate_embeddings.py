@@ -19,7 +19,6 @@ path_to_cpe_genome = os.path.join(
 # load pretrained models and tokenizer
 tokenizer = AutoTokenizer.from_pretrained(PRETRAINED_MODELS_DIR)
 model = AutoModelForMaskedLM.from_pretrained(PRETRAINED_MODELS_DIR)
-model.eval()  # set model to evaluation mode
 
 # get k of k-mer from the tokenizer
 special_tokens = set(tokenizer.all_special_tokens)

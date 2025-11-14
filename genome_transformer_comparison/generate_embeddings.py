@@ -29,10 +29,11 @@ kmer_length = len(first_kmer)
 max_seq_length = kmer_length * (tokenizer.model_max_length - 1)
 
 # get paths to folders in input
-bacteria_names = os.listdir(os.path.join(ROOT_DIR, 'inputs', EMBEDDING_CONFIG['cpes_or_imps']))
+bacteria_names = EMBEDDING_CONFIG['bacteria_list']
 
 for bacteria_name in bacteria_names:
     print(bacteria_name)
+
     fasta_file_names = os.listdir(
         os.path.join(ROOT_DIR, 'inputs', EMBEDDING_CONFIG['cpes_or_imps'], bacteria_name))
 
@@ -44,7 +45,7 @@ for bacteria_name in bacteria_names:
     for i, fasta_file in enumerate(fasta_file_paths):
         start_time = time.perf_counter()
 
-        # parse entire assembly file into single string
+        # parse entire assembly into single string
         cpe_genome = parse_fasta(fasta_file)
 
         # split into list that the tokenizer can handle
@@ -70,4 +71,4 @@ for bacteria_name in bacteria_names:
 
         elapsed_time = time.perf_counter() - start_time
         print(
-            f"Isolate {i}/{len(fasta_file_paths)} embedding took {elapsed_time:.4f} seconds")
+            f"Isolate {i}/{len(fasta_file_paths) - 1} embedding took {elapsed_time:.4f} seconds")

@@ -29,9 +29,10 @@ kmer_length = len(first_kmer)
 max_seq_length = kmer_length * (tokenizer.model_max_length - 1)
 
 # get paths to folders in input
-bacteria_names = EMBEDDING_CONFIG['bacteria_list']
+bacteria_names = os.listdir(os.path.join(ROOT_DIR, 'inputs', EMBEDDING_CONFIG['cpes_or_imps']))
 
 for bacteria_name in bacteria_names:
+    # TODO: setup logging
     print(bacteria_name)
 
     fasta_file_names = os.listdir(

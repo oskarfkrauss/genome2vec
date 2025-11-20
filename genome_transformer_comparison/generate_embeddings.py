@@ -29,19 +29,35 @@ kmer_length = len(first_kmer)
 max_seq_length = kmer_length * (tokenizer.model_max_length - 1)
 
 # get paths to folders in input
-bacteria_names = os.listdir(os.path.join(ROOT_DIR, 'inputs', EMBEDDING_CONFIG['cpes_or_imps']))
+bacteria_names = os.listdir(
+    os.path.join(ROOT_DIR, 'inputs', EMBEDDING_CONFIG['whole_genomes_or_plasmids'],
+                 EMBEDDING_CONFIG['cpes_or_imps']))
 
 for bacteria_name in bacteria_names:
     # TODO: setup logging
-    print(bacteria_name)
+    if EMBEDDING_CONFIG['whole_genomes_or_plasmids'] == 'whole_genomes':
+        # then the folder structure is broken down by bacteria
+        fasta_file_names = os.listdir(
+            os.path.join(ROOT_DIR, 'inputs', EMBEDDING_CONFIG['whole_genomes_or_plasmids'],
+                         EMBEDDING_CONFIG['cpes_or_imps'], bacteria_name))
 
-    fasta_file_names = os.listdir(
-        os.path.join(ROOT_DIR, 'inputs', EMBEDDING_CONFIG['cpes_or_imps'], bacteria_name))
+        fasta_file_paths = [
+            os.path.join(ROOT_DIR, 'inputs', EMBEDDING_CONFIG['whole_genomes_or_plasmids'],
+                         EMBEDDING_CONFIG['cpes_or_imps'], bacteria_name, file_name)
+            for file_name in fasta_file_names
+        ]
+    else:
+        # then the folder structure is not broken down by bacteria
+        fasta_file_names = os.listdir(
+            os.path.join(ROOT_DIR, 'inputs', EMBEDDING_CONFIG['whole_genomes_or_plasmids'],
+                         EMBEDDING_CONFIG['cpes_or_imps']))
 
-    fasta_file_paths = [
-        os.path.join(ROOT_DIR, 'inputs', EMBEDDING_CONFIG['cpes_or_imps'], bacteria_name, file_name)
-        for file_name in fasta_file_names
-    ]
+        fasta_file_paths = [
+            os.path.join(ROOT_DIR, 'inputs', EMBEDDING_CONFIG['whole_genomes_or_plasmids'],
+                         EMBEDDING_CONFIG['cpes_or_imps'], file_name)
+            for file_name in fasta_file_names
+        ]
+        # NOTE: this is a not a great solution but can't really be avoided atm, sorry
 
     for i, fasta_file in enumerate(fasta_file_paths):
         start_time = time.perf_counter()

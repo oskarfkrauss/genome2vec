@@ -1,6 +1,12 @@
-# Genome Transformer Comparison
+# Genome Emdebbing Generator
 
-A repository for generating embeddings from genome sequences
+This repository provides a framework for generating (fixed-dimensional) genome embeddings using transformer-based language models. It loads pretrained sequence models, tokenizes genomes from FASTA files, chunks long sequences to respect tokenizer limits, computes per-chunk embeddings, and aggregates them into a single vector per genome.
+
+The workflow is implemented primarily in two modules:
+
+`tools.py` — utilities for parsing FASTA files, splitting sequences, and computing chunk embeddings
+
+`generate_embeddings.py` — main script that orchestrates model loading, sequence processing, and embedding generation
 
 ## Method
 
@@ -11,19 +17,67 @@ The tokenizer converts these into numerical IDs that the Transformer model can p
 
 - **Token IDs:**  
   Example: `[2, 312, ..., 3671]` — each ID corresponds to a unique 6-mer in the tokenizer’s vocabulary.  
-- **Attention mask:**  
-  Example: `[1, 1, 1, 0, 0]` — indicates which tokens should be attended to by the model.  
-  In our case, this will typically be all `1`s, since every 6-mer in the chunk is used.
 
 ---
 
 ### Embedding Generation
 
-The Transformer model produces an **embedding vector for each token at each layer**.  
-Because the model has 32 layers *plus* an initial embedding layer, the output contains **33 layers in total** (`layer 0` = embedding layer, `layers 1–32` = Transformer blocks).
+The Nucleotide Transformer model produces **token-level hidden states for each layer**.
 
-To obtain the *final* representation of a sequence, we typically take the **last hidden layer** (`layer 32`). However, depending on the analysis, earlier or averaged layers may also be used.
+- The model consists of:
+- **1 embedding layer** (layer 0)  
+- **32 Transformer blocks** (layers 1–32)
 
+This results in **33 hidden-state layers** returned per forward pass.
+
+By default, the pipeline uses the **last hidden layer** (layer 32) as the representation of a chunk, but this could be modified to:
+
+- use earlier layers  
+- average multiple layers  
+- concatenate layers  
+
+Chunk embeddings are averaged across all chunks to produce one **genome-level embedding vector**. Again, this could be modified to a more intelligent aggregation e.g. with an RNN.
+
+This final embedding is written as a PyTorch `.pt` tensor to the output directory.
+
+## Repository Structure
+```
+├── tools.py
+├── generate_embeddings.py
+├── configuration.py
+├── generate_embeddings_config.py
+├── inputs/
+│   └── fasta/
+└── outputs/
+    └── embeddings/
+```
+TODO: finish this
+
+## How It Works (Pipeline Summary)
+
+1. **Load FASTA**  
+   `parse_fasta()` reads sequences and concatenates them into one string.
+
+2. **Split Sequence**  
+   `split_sequence_for_tokenizer()` creates chunks compatible with model limits.
+
+3. **Tokenise & Encode**  
+   Each chunk is converted to k-mer tokens and passed through the transformer.
+
+4. **Extract Hidden States**  
+   The model returns 33 layers of token embeddings.
+
+5. **Select Layer**  
+   The pipeline selects the *last hidden layer*.
+
+6. **Pool Within Chunk**  
+   Chunk embeddings are mean-pooled across tokens.
+
+7. **Aggregate Across Chunks**  
+   All chunk embeddings are stacked and averaged to yield a single genome embedding.
+
+8. **Save Output**  
+   A `.pt` tensor is written to the output directory.
 
 ## Environment Setup
 

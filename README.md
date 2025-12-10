@@ -65,18 +65,15 @@ TODO: finish this
    Each chunk is converted to k-mer tokens and passed through the transformer.
 
 4. **Extract Hidden States**  
-   The model returns 33 layers of token embeddings.
+   The model returns hidden layers of token embeddings.
 
 5. **Select Layer**  
    The pipeline selects the *last hidden layer*.
 
-6. **Pool Within Chunk**  
-   Chunk embeddings are mean-pooled across tokens.
-
-7. **Aggregate Across Chunks**  
+6. **Aggregate Across Chunks**  
    All chunk embeddings are stacked and averaged to yield a single genome embedding.
 
-8. **Save Output**  
+7. **Save Output**  
    A `.pt` tensor is written to the output directory.
 
 ## Environment Setup

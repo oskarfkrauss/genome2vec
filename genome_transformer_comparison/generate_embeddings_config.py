@@ -13,7 +13,7 @@ MODEL_MAX_SEQ_LENGTH_DICT = {
     # start and end of sequence
     'NucleotideTransformer_2.5B': 5994,
     # DNABERT_S allows for a sequence of 2000 which are tokenised using Byte Pair Encoding,
-    # cannot find any robust proof that this is the limit. When running the model, there seems,
-    # to be a 512 token limit ?
+    # given in the tokenizer_config.json. When running the model, the maximum number of tokens is
+    # 512
     'DNABERT_S': 2000
 }

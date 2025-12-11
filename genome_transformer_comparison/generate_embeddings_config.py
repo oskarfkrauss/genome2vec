@@ -1,11 +1,11 @@
 '''this should be a yaml file'''
 EMBEDDING_CONFIG = {
     # wgs or plasmids
-    'whole_genomes_or_plasmids': 'whole_genomes',
+    'whole_genomes_or_plasmids': 'plasmids',
     # whether we are trying to embed the CPE sequences or IMPs
-    'cpes_or_imps': 'cpes',
+    'cpes_or_imps': 'imps',
     # which pre trained transformer model to use, can be NucleotideTransformer_2.5B, DNABERT_S
-    'transformer_model': 'NucleotideTransformer_2.5B'
+    'transformer_model': 'DNABERT_S'
 }
 
 MODEL_MAX_SEQ_LENGTH_DICT = {

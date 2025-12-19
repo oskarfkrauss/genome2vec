@@ -16,9 +16,11 @@ from genome_transformer_comparison.configuration import ROOT_DIR, PRETRAINED_MOD
 
 # load pretrained models and tokenizer
 tokenizer = AutoTokenizer.from_pretrained(os.path.join(
-    PRETRAINED_MODELS_DIR, EMBEDDING_CONFIG['transformer_model'], 'tokenizer'))
+    PRETRAINED_MODELS_DIR, EMBEDDING_CONFIG['transformer_model'], 'tokenizer'),
+    trust_remote_code=True)
 model = AutoModel.from_pretrained(os.path.join(
-    PRETRAINED_MODELS_DIR, EMBEDDING_CONFIG['transformer_model'], 'model'))
+    PRETRAINED_MODELS_DIR, EMBEDDING_CONFIG['transformer_model'], 'model'),
+    trust_remote_code=True)
 
 # max sequence length for tokenizer
 max_seq_length = MODEL_MAX_SEQ_LENGTH_DICT[EMBEDDING_CONFIG['transformer_model']]

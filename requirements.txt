@@ -11,5 +11,6 @@ transformers
 jupyter
 ipykernel
 tqdm
+umap-learn
 
 pytest

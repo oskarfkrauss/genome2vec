@@ -8,7 +8,7 @@ import time
 import torch
 from transformers import AutoTokenizer, AutoModel
 
-from genome_transformer_comparison.tools import (
+from genome_transformer_comparison.transformer_tools import (
     parse_fasta, get_chunk_embedding, split_sequence_for_tokenizer)
 from genome_transformer_comparison.generate_embeddings_config import (
     EMBEDDING_CONFIG, MODEL_MAX_SEQ_LENGTH_DICT)

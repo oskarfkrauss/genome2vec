@@ -1,11 +1,9 @@
-inputs/
 outputs/
-results/
-pretrained_models/
+config.yaml
 
 **.egg-info
 **/__pycache__
-
+**.pytest_cache
 
 # OS-specific
 .DS_Store

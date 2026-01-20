@@ -21,7 +21,6 @@ def test_generate_embeddings(test_inputs_dir, tmp_path):
 
     # mock output directory
     output_dir = tmp_path / "outputs"
-    output_dir.mkdir()
 
     config = {
         "sequence_dir": str(sequences_dir),

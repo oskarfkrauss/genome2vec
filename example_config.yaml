@@ -1,0 +1,9 @@
+# An example config for generating embeddings from fasta sequences 
+sequence_dir: /path/to/sequence/fastas
+output_dir: /path/to/output/dir
+# Choose one of the following transformer models:
+# - NucleotideTransformer_2.5B
+# - DNABERT_S
+# - HyenaDNA_medium_160k
+# - ModernBert_DNA_37M_Virus
+transformer_model: NucleotideTransformer_2.5B

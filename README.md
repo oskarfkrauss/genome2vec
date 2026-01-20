@@ -1,50 +1,40 @@
 # genome2vec
 
-This repository provides a framework for generating (fixed-dimensional) genome embeddings using transformer-based foundation models. It loads pretrained sequence models, tokenizes genomes from FASTA files, chunks long sequences to respect tokenizer limits, computes per-chunk embeddings, and aggregates them into a single vector per genome.
+This repository provides a framework for generating (fixed-dimensional) genome embeddings using transformer-based foundation models. 
 
 ![](figures/genome2vec.png)
 
-The workflow is implemented primarily in two modules:
-
-`transformer_tools.py` — utilities for parsing FASTA files, splitting sequences, and computing chunk embeddings
-
-`generate_embeddings.py` — main script that orchestrates model loading, sequence processing, and embedding generation
-
 ## Method
+
+Sequences are parsed from FASTA files, chunked, tokenized then embedded.
 
 ![](figures/embedding_generation.png)
 
 ### Chunking
 
-Sequences are parsed and chunked according to model context 
+Sequences are chunked according to model context limits
 
 ### Tokenisation
 
-Each genome sequence is split into non-overlapping *k-mers* (e.g. 6-mers).  
-The tokenizer converts these into numerical IDs that the Transformer model can process.
+Each chunked sequence is tokenized either into non-overlapping k-mers (e.g. 6-mers) or using Byte Pair Encoding (BPE), depending on the chosen model.
+The tokenizer converts these tokens into numerical IDs within the Transformer model's vocabulary.
 
-- **Token IDs:**  
-  Example: `[2, 312, ..., 3671]` — each ID corresponds to a unique 6-mer in the tokenizer’s vocabulary.  
-
----
+Example: [2, 312, ..., 3671] — each integer corresponds to a token (e.g. a specific k-mer or BPE token) in the tokenizer’s vocabulary.
 
 ### Embedding Generation
 
-The Nucleotide Transformer model produces **token-level hidden states for each layer**.
+Each foundation model produces **token-level hidden states for each layer**. By default, the pipeline uses the **last hidden layer** as the representation of a chunk.
 
-- The model consists of:
-- **1 embedding layer** (layer 0)  
-- **32 Transformer blocks** (layers 1–32)
+Chunk embeddings are stacked across all chunks to produce one **genome-level embedding vector**.
 
-This results in **33 hidden-state layers** returned per forward pass.
+Example:
+Consider a model with a maximum input length of 1,000 6-mer tokens (corresponding to 6,000 nucleotides). For a genome sequence of length 12,000 nucleotides, the sequence is first split into two non-overlapping chunks of 6,000 nucleotides each.
 
-By default, the pipeline uses the **last hidden layer** (layer 32) as the representation of a chunk, but this could be modified to:
+Each chunk is tokenized independently into 6-mers, and each token is mapped by the Transformer to a vector of size `embedding_dimension`. The resulting token embeddings for each chunk are stacked to form a tensor of shape (1000, `embedding_dimension`).
 
-- use earlier layers  
-- average multiple layers  
-- concatenate layers  
+Token embeddings from different chunks are never jointly processed by the model: tokens within a chunk can attend only to other tokens in the same chunk. After embeddings have been generated for all chunks, the stacked token embeddings across chunks are concatenated and averaged along the token dimension to produce a single fixed-length embedding for the full genome of shape (1, `embedding_dimension`).
 
-Chunk embeddings are averaged across all chunks to produce one **genome-level embedding vector**. Again, this could be modified to a more intelligent aggregation e.g. with an RNN.
+As a result, information from different chunks is integrated only at the final averaging step; there is no cross-chunk contextualization during model inference.
 
 This final embedding is written as a PyTorch `.pt` tensor to the output directory.
 

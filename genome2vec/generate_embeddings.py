@@ -5,6 +5,7 @@ a Transformer architecture
 Usage:
     python generate_embeddings.py /path/to/config.yaml
 '''
+import os
 import sys
 import time
 from pathlib import Path
@@ -64,9 +65,7 @@ def main(config_path: Path) -> None:
         genome_sequence = parse_fasta(str(fasta_file))
 
         # split into tokenizer-friendly chunks
-        chunks = split_sequence_for_tokenizer(
-            genome_sequence, max_seq_length
-        )
+        chunks = split_sequence_for_tokenizer(genome_sequence, max_seq_length)
 
         # generate embeddings for each chunk
         chunk_embeddings = [
@@ -80,6 +79,7 @@ def main(config_path: Path) -> None:
 
         # Save output next to input
         output_path = Path(config["output_dir"]) / fasta_file.with_suffix(".pt").name
+        os.makedirs(os.path.dirname(output_path), exist_ok=True)
         torch.save(genome_embedding, output_path)
 
         elapsed = time.perf_counter() - start_time

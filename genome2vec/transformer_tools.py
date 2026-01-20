@@ -86,9 +86,9 @@ def get_chunk_embedding(
     tokens = tokenizer(sequence, return_tensors="pt", truncation=True)
     input_ids = tokens["input_ids"].to(device)
 
-    # this is some torch logic to put some variables (?) onto GPU accessible memory
+    # this is some torch logic to put some variables onto GPU accessible memory
     model = model.to(device)
-    model.eval()  # ensure evaluation mode
+    model.eval()
 
     with torch.no_grad():
         outputs = model(

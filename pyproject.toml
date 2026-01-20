@@ -1,0 +1,24 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "genome2vec"
+version = "0.1.0"
+description = "Embeddings for genome sequences using foundation models"
+readme = "README.md"
+requires-python = ">=3.9"
+license = {text = "MIT"}
+authors = [
+    { name = "Oskar Fraser-Krauss", email = "o.fraser-krauss23@imperial.ac.uk" }
+]
+dependencies = []
+keywords = ["genomics", "embeddings", "foundation-models"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "MIT License",
+    "Operating System :: OS Independent"
+]
+
+[tool.setuptools.packages.find]
+where = ["."]

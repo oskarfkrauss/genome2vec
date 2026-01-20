@@ -99,3 +99,28 @@ def get_chunk_embedding(
     embeddings = outputs.hidden_states[-1].squeeze(0).cpu()
 
     return embeddings
+
+
+TRANSFORMER_MODEL_ARGS = {
+    "NucleotideTransformer_2.5B": {
+        "remote_path": "InstaDeepAI/nucleotide-transformer-2.5b-multi-species",
+        # Nucleotide Transformer allows for 1000 6-mers but we make slightly smaller to allow for
+        # start and end of sequence. Embedding dimension is 2560
+        "max_seq_length": 5994},
+    "ModernBert_DNA_37M_Virus": {
+        'remote_path': "RaphaelMourad/ModernBert-DNA-v1-37M-virus",
+        # ModernBert_DNA_37M_Virus allows for 8192 tokens but is tokenised using byte pair encoding.
+        # Was trained on ~1kb virus sequences so we use that
+        'max_seq_length': 160000},
+    "DNABERT_S": {
+        "remote_path": "zhihan1996/DNABERT-S",
+        # DNABERT_S allows for a sequence of 2000 which are tokenised using Byte Pair Encoding,
+        # given in the tokenizer_config.json. When running the model, the maximum number of tokens
+        # is 512. Embedding dimension is 768
+        'max_seq_length': 2000},
+    "HyenaDNA_medium_160k": {
+        "remote_path": "LongSafari/hyenadna-medium-160k-seqlen-hf",
+        # ModernBert_DNA_37M_Virus allows for 8192 tokens but is tokenised using byte pair encoding.
+        # Was trained on ~1kb virus sequences so we use that
+        'max_seq_length': 160000}
+}

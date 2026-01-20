@@ -71,29 +71,12 @@ This final embedding is written as a PyTorch `.pt` tensor to the output director
 7. **Save Output**  
    A `.pt` tensor is written to the output directory.
 
-## Environment Setup
+## How to Use
 
-First, install [Conda](https://conda.io/projects/conda/en/latest/user-guide/install/index.html). Then, run
-
+Run
 ```
-conda create --name genome_transformer python=3.10.12
+python generate_embeddings.py path/to/assembly/files
 ```
-this creates an environment called `genome_transformer` in which we will install our packages. Now run
-```
-conda activate genome_transformer
-```
-to activate the environment, then, install packages with
-```
-pip install -r requirements.txt
-```
-finally, run
-```
-pip install -e .
-```
-to setup the repository for development.
-
-n.b.: Conda is just a way of managing your working environment, running the above command with a
-[Python Virtual Environment (venv)](https://docs.python.org/3/library/venv.html) will also work.
 
 ## Acknowledgements
 

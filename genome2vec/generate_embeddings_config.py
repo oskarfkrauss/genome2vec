@@ -1,9 +1,5 @@
 '''this should be a yaml file'''
 EMBEDDING_CONFIG = {
-    # whole_genomes or plasmids
-    'whole_genomes_or_plasmids': 'whole_genomes',
-    # whether we are trying to embed the CPE sequences or IMPs
-    'cpes_or_imps': 'imps',
     # which pre trained transformer model to use, can be NucleotideTransformer_2.5B, DNABERT_S,
     # HyenaDNA_medium_160k, ModernBert_DNA_37M_Virus
     'transformer_model': 'ModernBert_DNA_37M_Virus'
@@ -21,6 +17,6 @@ MODEL_MAX_SEQ_LENGTH_DICT = {
     # 160k model which allows for 160k single nucleotide tokens. Embedding dimension is 256
     'HyenaDNA_medium_160k': 160000,
     # ModernBert_DNA_37M_Virus allows for 8192 tokens but is tokenised using byte pair encoding.
-    # Was trained on ~1kb virus sequences so we use that?
+    # Was trained on ~1kb virus sequences so we use that
     'ModernBert_DNA_37M_Virus': 1000
 }

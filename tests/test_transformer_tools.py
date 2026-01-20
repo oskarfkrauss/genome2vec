@@ -2,15 +2,14 @@ import torch
 
 import os
 
-
-from genome2vec.tools import (
+from genome2vec.transformer_tools import (
     parse_fasta, split_sequence_for_tokenizer, get_chunk_embedding)
 
 
 def test_parse_fasta(test_inputs_dir):
-    mock_fasta_file = os.path.join(test_inputs_dir, 'mock_sequence.fna')
+    mock_fasta_file = os.path.join(test_inputs_dir, 'mock_sequences', 'mock_sequence_2.fna')
     parse_fasta(mock_fasta_file)
-    assert len(parse_fasta(mock_fasta_file)) == 51
+    assert len(parse_fasta(mock_fasta_file)) == 102
 
 
 def test_split_sequence_for_tokenizer(mock_sequence):

@@ -1,74 +1,98 @@
 '''
 This script attempts to generate embeddings for various genome sequences using
 a Transformer architecture
+
+Usage:
+    python generate_embeddings.py /path/to/config.yaml
 '''
-import os
+import sys
 import time
+from pathlib import Path
 
 import torch
 from transformers import AutoTokenizer, AutoModel
+import yaml
 
 from genome2vec.transformer_tools import (
-    parse_fasta, get_chunk_embedding, split_sequence_for_tokenizer)
-from genome2vec.generate_embeddings_config import (
-    EMBEDDING_CONFIG, MODEL_MAX_SEQ_LENGTH_DICT)
-from genome2vec.configuration import ROOT_DIR, PRETRAINED_MODELS_DIR
+    parse_fasta,
+    get_chunk_embedding,
+    split_sequence_for_tokenizer,
+    TRANSFORMER_MODEL_ARGS
+)
 
-# load pretrained models and tokenizer
-tokenizer = AutoTokenizer.from_pretrained(os.path.join(
-    PRETRAINED_MODELS_DIR, EMBEDDING_CONFIG['transformer_model'], 'tokenizer'),
-    trust_remote_code=True)
-model = AutoModel.from_pretrained(os.path.join(
-    PRETRAINED_MODELS_DIR, EMBEDDING_CONFIG['transformer_model'], 'model'),
-    trust_remote_code=True)
 
-# max sequence length for tokenizer
-max_seq_length = MODEL_MAX_SEQ_LENGTH_DICT[EMBEDDING_CONFIG['transformer_model']]
+def load_config(config_path: Path) -> dict:
+    with open(config_path, "r") as f:
+        return yaml.safe_load(f)
 
-# get paths to folders in input
-bacteria_names = os.listdir(
-    os.path.join(ROOT_DIR, 'inputs', EMBEDDING_CONFIG['whole_genomes_or_plasmids'],
-                 EMBEDDING_CONFIG['cpes_or_imps']))
 
-for bacteria_name in bacteria_names:
-    fasta_file_names = os.listdir(
-        os.path.join(ROOT_DIR, 'inputs', EMBEDDING_CONFIG['whole_genomes_or_plasmids'],
-                     EMBEDDING_CONFIG['cpes_or_imps'], bacteria_name))
+def main(config_path: Path) -> None:
+    # --- Load config ---
+    config = load_config(config_path)
 
-    fasta_file_paths = [
-        os.path.join(ROOT_DIR, 'inputs', EMBEDDING_CONFIG['whole_genomes_or_plasmids'],
-                     EMBEDDING_CONFIG['cpes_or_imps'], bacteria_name, file_name)
-        for file_name in fasta_file_names
-    ]
+    transformer_model = config["transformer_model"]
+    sequence_dir = Path(config["sequence_dir"])
 
-    for i, fasta_file in enumerate(fasta_file_paths):
+    if not sequence_dir.exists():
+        raise FileNotFoundError(f"FASTA directory not found: {sequence_dir}")
+
+    max_seq_length = TRANSFORMER_MODEL_ARGS[transformer_model]["max_seq_length"]
+
+    # --- Load tokenizer and model ---
+    tokenizer = AutoTokenizer.from_pretrained(
+        TRANSFORMER_MODEL_ARGS[transformer_model]["remote_path"],
+        trust_remote_code=True
+    )
+    model = AutoModel.from_pretrained(
+        TRANSFORMER_MODEL_ARGS[transformer_model]["remote_path"],
+        trust_remote_code=True
+    )
+
+    # --- Process FASTA files ---
+    fasta_files = sorted(
+        f for f in sequence_dir.iterdir()
+        if f.suffix in {".fna", ".fasta", ".fa"}
+    )
+
+    if not fasta_files:
+        raise RuntimeError(f"No FASTA files found in {sequence_dir}")
+
+    for i, fasta_file in enumerate(fasta_files):
         start_time = time.perf_counter()
 
         # parse entire assembly into single string
-        cpe_genome = parse_fasta(fasta_file)
+        genome_sequence = parse_fasta(str(fasta_file))
 
-        # split into list that the tokenizer can handle
-        tokenizer_friendly_inputs = split_sequence_for_tokenizer(cpe_genome, max_seq_length)
+        # split into tokenizer-friendly chunks
+        chunks = split_sequence_for_tokenizer(
+            genome_sequence, max_seq_length
+        )
 
         # generate embeddings for each chunk
-        all_chunk_embeddings = []
-        for chunk in tokenizer_friendly_inputs:
-            chunk_embedding = get_chunk_embedding(tokenizer, model, [chunk])
-            all_chunk_embeddings.append(chunk_embedding)
+        chunk_embeddings = [
+            get_chunk_embedding(tokenizer, model, [chunk])
+            for chunk in chunks
+        ]
 
-        # stack all chunk embeddings into a single tensor
-        all_chunk_embeddings_tensor = torch.vstack(all_chunk_embeddings)
+        # stack and average
+        all_chunk_embeddings = torch.vstack(chunk_embeddings)
+        genome_embedding = all_chunk_embeddings.mean(dim=0)
 
-        # compute mean embedding across all chunks
-        # NOTE: very important step, assumes order is not important
-        genome_embedding = all_chunk_embeddings_tensor.mean(dim=0)
+        # Save output next to input
+        output_path = Path(config["output_dir"]) / fasta_file.with_suffix(".pt").name
+        torch.save(genome_embedding, output_path)
 
-        # now save into outputs folder for specified transformer model
-        embeddings_output_path = fasta_file.replace(
-            "inputs", f"outputs/{EMBEDDING_CONFIG['transformer_model']}").replace("fasta", "pt")
-        os.makedirs(os.path.dirname(embeddings_output_path), exist_ok=True)
-        torch.save(genome_embedding, embeddings_output_path)
-
-        elapsed_time = time.perf_counter() - start_time
+        elapsed = time.perf_counter() - start_time
         print(
-            f"Isolate {i}/{len(fasta_file_paths) - 1} embedding took {elapsed_time:.4f} seconds")
+            f"[{i+1}/{len(fasta_files)}] "
+            f"{fasta_file.name} embedded in {elapsed:.2f}s"
+        )
+
+
+if __name__ == "__main__":
+    if len(sys.argv) != 2:
+        raise SystemExit(
+            "Usage: python generate_embeddings.py /path/to/config.yaml"
+        )
+
+    main(Path(sys.argv[1]))

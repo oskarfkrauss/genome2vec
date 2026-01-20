@@ -1,14 +1,22 @@
-# Genome Emdebbing Generator
+# genome2vec
 
-This repository provides a framework for generating (fixed-dimensional) genome embeddings using transformer-based language models. It loads pretrained sequence models, tokenizes genomes from FASTA files, chunks long sequences to respect tokenizer limits, computes per-chunk embeddings, and aggregates them into a single vector per genome.
+This repository provides a framework for generating (fixed-dimensional) genome embeddings using transformer-based foundation models. It loads pretrained sequence models, tokenizes genomes from FASTA files, chunks long sequences to respect tokenizer limits, computes per-chunk embeddings, and aggregates them into a single vector per genome.
+
+![](figures/genome2vec.png)
 
 The workflow is implemented primarily in two modules:
 
-`tools.py` — utilities for parsing FASTA files, splitting sequences, and computing chunk embeddings
+`transformer_tools.py` — utilities for parsing FASTA files, splitting sequences, and computing chunk embeddings
 
 `generate_embeddings.py` — main script that orchestrates model loading, sequence processing, and embedding generation
 
 ## Method
+
+![](figures/embedding_generation.png)
+
+### Chunking
+
+Sequences are parsed and chunked according to model context 
 
 ### Tokenisation
 
@@ -40,19 +48,6 @@ Chunk embeddings are averaged across all chunks to produce one **genome-level em
 
 This final embedding is written as a PyTorch `.pt` tensor to the output directory.
 
-## Repository Structure
-```
-├── tools.py
-├── generate_embeddings.py
-├── configuration.py
-├── generate_embeddings_config.py
-├── inputs/
-│   └── fasta/
-└── outputs/
-    └── embeddings/
-```
-TODO: finish this
-
 ## How It Works (Pipeline Summary)
 
 1. **Load FASTA**  
@@ -62,7 +57,7 @@ TODO: finish this
    `split_sequence_for_tokenizer()` creates chunks compatible with model limits.
 
 3. **Tokenise & Encode**  
-   Each chunk is converted to k-mer tokens and passed through the transformer.
+   Each chunk is converted to k-mer or BPE tokens and passed through the transformer.
 
 4. **Extract Hidden States**  
    The model returns hidden layers of token embeddings.

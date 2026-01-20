@@ -8,11 +8,11 @@ import time
 import torch
 from transformers import AutoTokenizer, AutoModel
 
-from genome_transformer_comparison.transformer_tools import (
+from genome2vec.transformer_tools import (
     parse_fasta, get_chunk_embedding, split_sequence_for_tokenizer)
-from genome_transformer_comparison.generate_embeddings_config import (
+from genome2vec.generate_embeddings_config import (
     EMBEDDING_CONFIG, MODEL_MAX_SEQ_LENGTH_DICT)
-from genome_transformer_comparison.configuration import ROOT_DIR, PRETRAINED_MODELS_DIR
+from genome2vec.configuration import ROOT_DIR, PRETRAINED_MODELS_DIR
 
 # load pretrained models and tokenizer
 tokenizer = AutoTokenizer.from_pretrained(os.path.join(

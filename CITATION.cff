@@ -1,0 +1,14 @@
+cff-version: 1.2.0
+title: "genome2vec"
+message: "If you use this software, please cite it."
+authors:
+  - family-names: Oskar
+    given-names: Fraser-Krauss
+    affiliation: "Imperial College London"
+repository-code: https://github.com/oskarfkrauss/genome2vec
+license: MIT
+keywords:
+  - genomics
+  - embeddings
+  - foundation-models
+  - representation-learning

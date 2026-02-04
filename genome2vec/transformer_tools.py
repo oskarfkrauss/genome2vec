@@ -15,7 +15,7 @@ def parse_fasta(file_path: str):
     Returns
     -------
     seq : str
-        The sequence parsed into a single string
+        The sequence parsed into a single string and capitalised
     '''
     with open(file_path) as f:
         seq = ''
@@ -26,7 +26,7 @@ def parse_fasta(file_path: str):
                 continue
             else:
                 seq = seq + line
-    return seq
+    return seq.upper()
 
 
 def split_sequence_for_tokenizer(sequence: str, max_length: int) -> list:

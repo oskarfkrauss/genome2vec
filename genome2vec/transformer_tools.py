@@ -101,6 +101,46 @@ def get_chunk_embedding(
     return embeddings
 
 
+def get_cls_token_embedding(
+        tokenizer: AutoTokenizer, model: AutoModel, sequence: str, device=None):
+    """
+    Create an embedding using only the CLS token (on GPU if available).
+
+    Parameters
+    ----------
+    sequence : str
+        A 'chunk' of the genome sequence.
+    device : torch.device or None
+        Device to run the model on (CPU or GPU). Defaults to CPU.
+
+    Returns
+    -------
+    torch.Tensor
+        CLS embedding (shape [hidden_dim])
+    """
+    if device is None:
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+    # Tokenize and move to device, truncate the sequnece so that the model can handle the input,
+    # can result in the last few nucleotides (of the whole seq) not being included in the embedding
+    tokens = tokenizer(sequence, return_tensors="pt", truncation=True)
+    input_ids = tokens["input_ids"].to(device)
+
+    # this is some torch logic to put some variables onto GPU accessible memory
+    model = model.to(device)
+    model.eval()
+
+    with torch.no_grad():
+        outputs = model(
+            input_ids,
+            output_hidden_states=True)
+
+    # Get CLS token embedding from final layer
+    embeddings = outputs.hidden_states[-1][:, 0, :].squeeze(0).cpu()
+
+    return embeddings
+
+
 TRANSFORMER_MODEL_ARGS = {
     "NucleotideTransformer_2.5B": {
         "remote_path": "InstaDeepAI/nucleotide-transformer-2.5b-multi-species",

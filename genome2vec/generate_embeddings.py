@@ -74,13 +74,12 @@ def main(config_path: Path) -> None:
         ]
 
         # stack and average
-        all_chunk_embeddings = torch.vstack(chunk_embeddings)
-        genome_embedding = all_chunk_embeddings.mean(dim=0)
+        all_chunk_cls_tokens = torch.vstack(chunk_embeddings)
 
         # Save output next to input
         output_path = Path(config["output_dir"]) / fasta_file.with_suffix(".pt").name
         os.makedirs(os.path.dirname(output_path), exist_ok=True)
-        torch.save(genome_embedding, output_path)
+        torch.save(all_chunk_cls_tokens, output_path)
 
         elapsed = time.perf_counter() - start_time
         print(

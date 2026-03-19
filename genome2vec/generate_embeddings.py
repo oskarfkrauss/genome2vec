@@ -16,7 +16,7 @@ import yaml
 
 from genome2vec.transformer_tools import (
     parse_fasta,
-    get_chunk_embedding,
+    get_chunk_embeddings,
     split_sequence_for_tokenizer,
     TRANSFORMER_MODEL_ARGS
 )
@@ -28,6 +28,11 @@ def load_config(config_path: Path) -> dict:
 
 
 def main(config_path: Path) -> None:
+    '''
+    1 chunk = ~6,000 nucleotides. By incrasing batch size, it increases the number of chunks processed
+    1 chunk = 1[cls]
+    Increase batch size to utilise GPU strengths, but be mindful of VRAM limits. If you get OOM errors, reduce batch size.
+    '''
     # --- Load config ---
     config = load_config(config_path)
 
@@ -58,24 +63,32 @@ def main(config_path: Path) -> None:
     if not fasta_files:
         raise RuntimeError(f"No FASTA files found in {sequence_dir}")
 
+    # Define device and move model onto gpu vram.
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    model = model.to(device)
+
     for i, fasta_file in enumerate(fasta_files):
         start_time = time.perf_counter()
 
         # parse entire assembly into single string
         genome_sequence = parse_fasta(str(fasta_file))
 
-        # split into tokenizer-friendly chunks
+        # split into tokenizer-friendly chunks 
+        # bug currently loading the 2.5b model for every loop.
         chunks = split_sequence_for_tokenizer(genome_sequence, max_seq_length)
 
-        # generate embeddings for each chunk
-        chunk_embeddings = [
-            get_chunk_embedding(tokenizer, model, [chunk])
-            for chunk in chunks
-        ]
+        # 2. Pass the entire list of chunks to the function
+        chunk_embeddings = get_chunk_embeddings(
+            tokenizer=tokenizer, 
+            model=model, 
+            chunks=chunks, 
+            batch_size=16, # Adjust this based on your GPU VRAM (e.g., 8, 16, 32, 64)
+            device=device
+        )
 
-        # stack and average
-        all_chunk_embeddings = torch.vstack(chunk_embeddings)
-        genome_embedding = all_chunk_embeddings.mean(dim=0)
+        # average
+        #to replace with attention pooling
+        genome_embedding = chunk_embeddings.mean(dim=0) 
 
         # Save output next to input
         output_path = Path(config["output_dir"]) / fasta_file.with_suffix(".pt").name

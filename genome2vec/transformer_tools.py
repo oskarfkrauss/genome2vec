@@ -28,7 +28,8 @@ def parse_fasta(file_path: str):
                 seq = seq + line
     return seq.upper()
 
-
+# Do we need it to overlap?
+# What if the resistance gene sits exactly on the boundary.
 def split_sequence_for_tokenizer(sequence: str, max_length: int) -> list:
     """
     Split a long genome sequence string into a list of substrings each no longer than
@@ -61,8 +62,20 @@ def split_sequence_for_tokenizer(sequence: str, max_length: int) -> list:
     return chunks
 
 
-def get_chunk_embedding(
-        tokenizer: AutoTokenizer, model: AutoModel, sequence: str, device=None):
+def get_chunk_embeddings(
+        tokenizer: AutoTokenizer, 
+        model: AutoModel, 
+        chunks: list[str], 
+        batch_size: int = 16, 
+        device: torch.device = None
+) -> torch.Tensor:
+    """
+        Computes [CLS] embeddings for a list of genome chunks using mini-batching 
+        and mixed precision.
+
+        Returns a single tensor containing the [CLS] embeddings for all chunks, stacked along the first dimension.
+    """
+
     """
     Create an embedding of a 'chunk' of a genome sequence (on GPU if available).
 
@@ -81,24 +94,48 @@ def get_chunk_embedding(
     if device is None:
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    # Tokenize and move to device, truncate the sequnece so that the model can handle the input,
-    # can result in the last few nucleotides (of the whole seq) not being included in the embedding
-    tokens = tokenizer(sequence, return_tensors="pt", truncation=True)
-    input_ids = tokens["input_ids"].to(device)
 
-    # this is some torch logic to put some variables onto GPU accessible memory
-    model = model.to(device)
     model.eval()
+    all_embeddings = []
+
+    # Determine the best precision type for the hardware
+    # bfloat16 is preferred for stability if the GPU supports it
+    amp_dtype = torch.bfloat16 if (torch.cuda.is_available() and torch.cuda.is_bf16_supported()) else torch.float16
 
     with torch.no_grad():
-        outputs = model(
-            input_ids,
-            output_hidden_states=True)
+        # Iterate over the chunks in mini-batches (looping through batch size)
+        for i in range(0, len(chunks), batch_size):
+            batch_chunks = chunks[i : i + batch_size]
+            
+            # Tokenize the entire batch at once. 
+            # Padding is required now because sequences in a batch must be the same length.
+            tokens = tokenizer(
+                batch_chunks, 
+                return_tensors="pt", 
+                padding=True, 
+                truncation=True
+            ).to(device)
 
-    # Get last hidden state, remove batch dimension, and move back to cpu
-    embeddings = outputs.hidden_states[-1].squeeze(0).cpu()
+            # Force the forward pass into mixed precision
+            with torch.autocast(device_type=device.type, dtype=amp_dtype):
+                outputs = model(
+                    input_ids=tokens["input_ids"],
+                    attention_mask=tokens["attention_mask"], # Pass attention mask for padded tokens
+                    output_hidden_states=True
+                )
 
-    return embeddings
+            # Get last hidden state, remove batch dimension, and move back to cpu
+            last_hidden_state = outputs.hidden_states[-1]
+            # Grab all sequences in the batch (:), the [CLS] token (0), and all hidden dims (:)
+            cls_embeddings = last_hidden_state[:, 0, :]
+            # Shape: [16, 2560] for 16 sequences in batch and 2560 hidden dimension for NucleotideTransformer_2.5B
+
+            # Move back to CPU immediately to free up GPU VRAM for the next batch
+            all_embeddings.append(cls_embeddings.cpu().to(torch.float32))
+            
+    # Stack all mini-batch tensors into one final tensor
+    return torch.cat(all_embeddings, dim=0)
+
 
 
 TRANSFORMER_MODEL_ARGS = {

@@ -22,4 +22,4 @@ def test_split_sequence_for_tokenizer(mock_sequence):
 
 def test_get_chunk_embedding(mock_tokenizer, mock_model, mock_sequence):
     chunk_embedding = get_chunk_embedding(mock_tokenizer, mock_model, mock_sequence)
-    torch.testing.assert_close(chunk_embedding, torch.tensor([0.1, 0.2, 0.3]))
+    torch.testing.assert_close(chunk_embedding, torch.tensor([0.1, 0.2, 0.3, 0.4]))

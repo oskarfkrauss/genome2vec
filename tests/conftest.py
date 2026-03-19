@@ -35,9 +35,17 @@ def mock_model() -> MagicMock:
     mock_model.to.return_value = mock_model
     mock_model.eval.return_value = mock_model
 
+    #  create a specific 3D tensor: shape (1, 3, 4)
+    # Token 0 (The CLS token) will be exactly [0.1, 0.2, 0.3, 0.4]
+    fixed_tensor = torch.tensor([[[0.1, 0.2, 0.3, 0.4],  # Token 0 (CLS token)
+                                  [0.5, 0.6, 0.7, 0.8],  # Token 1
+                                  [0.9, 1.0, 1.1, 1.2]]]) # Token 2    
+    
+
     # mock outputs from model
     mock_outputs = MagicMock()
-    mock_outputs.hidden_states = torch.tensor([[0.1, 0.2, 0.3]])
+    # mock the hidden states to be a list of tensors, where the last one has shape [1, seq_len, hidden_dim]
+    mock_outputs.hidden_states = [fixed_tensor]
 
     mock_model.return_value = mock_outputs
     return mock_model

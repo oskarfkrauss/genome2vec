@@ -4,6 +4,32 @@ This repository provides a framework for generating (fixed-dimensional) genome e
 
 ![](figures/genome2vec.png)
 
+## Installation
+
+# Prerequisites
+- python 3.11
+
+
+# Setup
+1. Clone the repository
+```
+git clone <repository-url>
+cd genome2vec
+```
+
+2. Setup conda environment
+```
+conda create --name genome2vec python=3.11
+conda activate genome2vec
+```
+
+3. Install requirements
+```
+pip install -r requirements.txt
+```
+
+## Usage
+
 ## Method
 
 Sequences are parsed from FASTA files, chunked, tokenized then embedded.

@@ -89,7 +89,7 @@ This final embedding is written as a PyTorch `.pt` tensor to the output director
 
 ## Environment Setup
 
-_For running on an external GPU server with CUDA version 12.1+_
+_For running on an external GPU server with CUDA version 11.8_
 
 First, install [Conda](https://conda.io/projects/conda/en/latest/user-guide/install/index.html). Then, run
 
@@ -123,7 +123,7 @@ n.b.: Conda is just a way of managing your working environment, running the abov
 
 Run
 ```
-python generate_embeddings.py path/to/assembly/files
+python genome2vec/generate_embeddings.py path/to/config.yaml
 ```
 
 ## Acknowledgements

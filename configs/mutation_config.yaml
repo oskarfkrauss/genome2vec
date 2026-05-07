@@ -1,0 +1,34 @@
+# mutation_config.yaml
+# Config for 02_generate_mutations.py
+
+# Path to the base FASTA file to mutate
+# Use one real isolate as your starting point
+base_fasta: data/outbreak_dataset/sequences/sequences/whole_genomes/CPEs/C_freundii/234098wA8_CPE0002631_assembly_filtered.fasta
+
+# Where to save mutated FASTAs and the manifest CSV
+output_dir: data/mutations/C_freundii_base
+
+# Which contig to mutate (0 = NODE_1, 1 = NODE_2 etc.)
+# NODE_1 is longest so start there
+contig_index: 0
+
+# SNP levels to test
+# Start broad to validate signal exists, then narrow toward clinical range
+snp_levels:
+  - 0
+  - 5
+  - 10
+  - 50
+  - 100
+  - 500
+  - 1000
+
+# How many independent random mutations per SNP level
+# Different replicates use different random positions
+replicates: 3
+
+# Base random seed — actual seed per run is derived from this
+base_seed: 42
+
+# Must match what you used to generate embeddings
+transformer_model: NucleotideTransformer_2.5B

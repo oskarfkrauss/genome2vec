@@ -6,6 +6,7 @@ from transformers import AutoTokenizer, AutoModel
 def parse_fasta(file_path: str):
     '''
     Parse fasta file (.fna or .fasta) file into a single string
+    Used to concetante all contigs into one big string
 
     Parameters
     ----------

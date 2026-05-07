@@ -1,0 +1,24 @@
+# comparison_config.yaml
+# Config for 03_run_comparison.py
+
+# Directory where .pt embedding files were saved by 01_generate_embeddings.py
+embeddings_dir: data/embeddings/C_freundii_mutations
+
+# Manifest CSV produced by 02_generate_mutations.py
+manifest_path: data/mutations/C_freundii_base/manifest.csv
+
+# Where to save comparison results
+output_csv: results/comparison_results.csv
+
+# Must match what you used to generate embeddings
+transformer_model: NucleotideTransformer_2.5B
+
+# Cosine similarity thresholds for divergent chunk filtering (Option 2 & 3)
+# Chunks with best-match cosine > high_threshold are treated as identical
+# Chunks with best-match cosine < low_threshold are treated as unrelated noise
+high_threshold: 0.99
+low_threshold: 0.30
+
+# Option 3 is slower — it re-embeds divergent chunks at full token resolution
+# Set to false first, validate Options 1 and 2 work, then enable
+run_option3: false

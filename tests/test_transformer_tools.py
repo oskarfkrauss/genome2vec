@@ -2,7 +2,7 @@ import torch
 
 import os
 
-from genome2vec.transformer_tools import (
+from utils.transformer_tools import (
     parse_fasta, split_sequence_for_tokenizer, get_chunk_embedding)
 
 

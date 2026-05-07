@@ -14,7 +14,7 @@ import torch
 from transformers import AutoTokenizer, AutoModel
 import yaml
 
-from genome2vec.transformer_tools import (
+from utils.transformer_tools import (
     parse_fasta,
     get_chunk_embeddings,
     split_sequence_for_tokenizer,
@@ -86,14 +86,12 @@ def main(config_path: Path) -> None:
             device=device
         )
 
-        # average
-        #to replace with attention pooling
-        genome_embedding = chunk_embeddings.mean(dim=0) 
 
-        # Save output next to input
+        # Save everything to do cross attention output next to input
         output_path = Path(config["output_dir"]) / fasta_file.with_suffix(".pt").name
         os.makedirs(os.path.dirname(output_path), exist_ok=True)
-        torch.save(genome_embedding, output_path)
+        # Shape: [n_chunks, 2560] not [2560]
+        torch.save(chunk_embeddings, output_path)
 
         elapsed = time.perf_counter() - start_time
         print(

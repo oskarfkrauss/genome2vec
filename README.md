@@ -61,11 +61,42 @@ This final embedding is written as a PyTorch `.pt` tensor to the output director
 7. **Save Output**  
    A `.pt` tensor is written to the output directory.
 
+## Environment Setup
+
+_For running on an external GPU server with CUDA version 11.8_
+
+First, install [Conda](https://conda.io/projects/conda/en/latest/user-guide/install/index.html). Then, run
+
+```
+conda create --name genome2vec python=3.11
+```
+this creates an environment called `genome2vec` in which we will install our packages. Now run
+```
+conda activate genome2vec
+```
+to activate the environment, then, install gpu specific packages with
+```
+pip install -r requirements-gpu.txt
+```
+which installs torch related dependencies for the correct CUDA version. Next, install
+all other dependencies with 
+```
+pip install -r requirements.txt
+```
+finally, run
+```
+pip install -e .
+```
+to setup the repository for development.
+
+n.b.: Conda is just a way of managing your working environment, running the above command with a
+[Python Virtual Environment (venv)](https://docs.python.org/3/library/venv.html) will also work.
+
 ## How to Use
 
 Run
 ```
-python generate_embeddings.py path/to/assembly/files
+python genome2vec/generate_embeddings.py path/to/config.yaml
 ```
 
 ## Acknowledgements

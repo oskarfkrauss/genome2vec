@@ -67,13 +67,13 @@ def main(config_path: Path) -> None:
         # split into tokenizer-friendly chunks
         chunks = split_sequence_for_tokenizer(genome_sequence, max_seq_length)
 
-        # generate embeddings for each chunk
+        # generate token embedding for each chunk
         chunk_embeddings = [
             get_chunk_embedding(tokenizer, model, [chunk])
             for chunk in chunks
         ]
 
-        # stack and average
+        # stack and mean
         all_chunk_embeddings = torch.vstack(chunk_embeddings)
         genome_embedding = all_chunk_embeddings.mean(dim=0)
 

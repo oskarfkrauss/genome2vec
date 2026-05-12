@@ -83,7 +83,6 @@ all other dependencies with
 ```
 pip install -r requirements.txt
 ```
-The first 
 finally, run
 ```
 pip install -e .

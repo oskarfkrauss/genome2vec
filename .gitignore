@@ -8,3 +8,7 @@ config.yaml
 # OS-specific
 .DS_Store
 Thumbs.db
+
+
+#data file
+data/

@@ -16,7 +16,7 @@ import yaml
 
 from genome2vec.transformer_tools import (
     parse_fasta,
-    get_cls_token_embedding,
+    get_chunk_embedding,
     split_sequence_for_tokenizer,
     TRANSFORMER_MODEL_ARGS
 )
@@ -69,17 +69,17 @@ def main(config_path: Path) -> None:
 
         # generate CLS token embedding for each chunk
         chunk_embeddings = [
-            get_cls_token_embedding(tokenizer, model, [chunk])
+            get_chunk_embedding(tokenizer, model, [chunk])
             for chunk in chunks
         ]
 
         # stack and average
-        all_chunk_cls_tokens = torch.vstack(chunk_embeddings)
+        genome_embedding = chunk_embeddings.mean(dim=0)
 
         # Save output next to input
         output_path = Path(config["output_dir"]) / fasta_file.with_suffix(".pt").name
         os.makedirs(os.path.dirname(output_path), exist_ok=True)
-        torch.save(all_chunk_cls_tokens, output_path)
+        torch.save(genome_embedding, output_path)
 
         elapsed = time.perf_counter() - start_time
         print(

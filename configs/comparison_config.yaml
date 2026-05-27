@@ -2,10 +2,10 @@
 # Config for 03_run_comparison.py
 
 # Directory where .pt embedding files were saved by 01_generate_embeddings.py
-embeddings_dir: data/embeddings/C_freundii_mutations
+embeddings_dir: embeddings
 
 # Manifest CSV produced by 02_generate_mutations.py
-manifest_path: data/mutations/C_freundii_base/manifest.csv
+manifest_path: mutations/manifest.csv
 
 # Where to save comparison results
 output_csv: results/comparison_results.csv

@@ -128,7 +128,6 @@ def chunk_detection_accuracy(
 # ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
-
 def main(config_path: Path) -> None:
     config = load_config(config_path)
 

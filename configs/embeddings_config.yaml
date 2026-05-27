@@ -1,10 +1,10 @@
 # configs/embedding_config.yaml
-# For embedding the mutated FASTAs produced by 02_generate_mutations.py
+# For embedding the mutated FASTAs produced by 01_generate_mutations.py
 
-# Point this at wherever 02_generate_mutations.py saved the mutated FASTAs
-sequence_dir: data/mutations/C_freundii_base
+# Point this at wherever 01_generate_mutations.py saved the mutated FASTAs
+sequence_dir: mutations
 
 # Where to save the .pt embedding files
-output_dir: data/embeddings/C_freundii_mutations
+output_dir: embeddings
 
 transformer_model: NucleotideTransformer_2.5B

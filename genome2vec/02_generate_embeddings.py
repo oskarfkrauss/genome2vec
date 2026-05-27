@@ -51,7 +51,7 @@ def main(config_path: Path) -> None:
     )
     model = AutoModel.from_pretrained(
         TRANSFORMER_MODEL_ARGS[transformer_model]["remote_path"],
-        trust_remote_code=True
+        trust_remote_code=True, dtype=torch.float16
     )
 
     # --- Process FASTA files ---
@@ -64,7 +64,7 @@ def main(config_path: Path) -> None:
         raise RuntimeError(f"No FASTA files found in {sequence_dir}")
 
     # Define device and move model onto gpu vram.
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     model = model.to(device)
 
     for i, fasta_file in enumerate(fasta_files):
@@ -82,10 +82,9 @@ def main(config_path: Path) -> None:
             tokenizer=tokenizer, 
             model=model, 
             chunks=chunks, 
-            batch_size=16, # Adjust this based on your GPU VRAM (e.g., 8, 16, 32, 64)
+            batch_size=32, # Adjust this based on your GPU VRAM (e.g., 8, 16, 32, 64)
             device=device
         )
-
 
         # Save everything to do cross attention output next to input
         output_path = Path(config["output_dir"]) / fasta_file.with_suffix(".pt").name

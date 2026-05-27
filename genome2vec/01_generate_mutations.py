@@ -1,3 +1,7 @@
+"""
+Generate artificial contigs by mutating a 'base' contig for embedding later
+"""
+
 import os
 import sys
 import csv
@@ -32,7 +36,6 @@ def main(config_path: Path) -> None:
     base_seed     = config.get("base_seed", 42)
     model_name    = config["transformer_model"]
     contig_index  = config.get("contig_index", 0)  # defaults to NODE_1
-
  
     chunk_size = TRANSFORMER_MODEL_ARGS[model_name]["max_seq_length"]
  

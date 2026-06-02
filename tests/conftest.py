@@ -1,3 +1,5 @@
+import json
+import os
 import pytest
 import torch
 from unittest.mock import MagicMock
@@ -17,6 +19,12 @@ def test_inputs_dir() -> Path:
 def mock_sequence() -> str:
     return 'AGTGGACGCATCACTGGTGTTCGGGTTGTCATGCCAATGGCATTGCCCGGT'
 
+
+@pytest.fixture()
+def mock_annotations_dict(test_inputs_dir) -> dict:
+    with open(os.path.join(test_inputs_dir, 'mock_annotations', 'mock_sequence_2.json'), "r") as f:
+        annotation_dict = json.load(f)
+    return annotation_dict
 
 @pytest.fixture()
 def mock_tokenizer() -> MagicMock:

@@ -3,41 +3,14 @@ import torch
 from transformers import AutoTokenizer, AutoModel
 
 
-def parse_fasta(file_path: str):
-    '''
-    Parse fasta file (.fna or .fasta) file into a single string
-
-    Parameters
-    ----------
-    file_path : str
-        Path to the fasta assembly file
-
-    Returns
-    -------
-    seq : str
-        The sequence parsed into a single string and capitalised
-    '''
-    with open(file_path) as f:
-        seq = ''
-        for line in f:
-            line = line.rstrip()
-            # ignore lines containing read headers
-            if line.startswith('>'):
-                continue
-            else:
-                seq = seq + line
-    return seq.upper()
-
-
-def split_sequence_for_tokenizer(sequence: str, max_length: int) -> list:
+def split_sequence_for_tokenizer(annotations: dict, max_length: int) -> list:
     """
-    Split a long genome sequence string into a list of substrings each no longer than
-    max_length
+    TODO: write a descriptive docstring
 
     Parameters
     ----------
-    sequence : str
-        Raw sequence. This will be normalized to uppercase.
+    annotations : dict
+        Annotations of the sequence produced by Baka.
     max_length : int
         Maximum length (in characters) of each chunk. Choose this to match the tokenizer's
         maximum input size (or slightly smaller).
@@ -50,15 +23,41 @@ def split_sequence_for_tokenizer(sequence: str, max_length: int) -> list:
     if max_length <= 0:
         raise ValueError("max_length must be > 0")
 
-    chunks = []
-    step = max_length
-    start = 0
-    seq_len = len(sequence)
-    while start < seq_len:
-        end = start + max_length
-        chunks.append(sequence[start:end])
-        start += step
-    return chunks
+    # get contigs to their full sequence strings
+    contigs = {seq["id"]: seq["nt"] for seq in annotations.get("sequences", [])}
+    # get features for each contig
+    features_by_contig = {contig_id: [] for contig_id in contigs}
+    for feature in annotations.get("features", []):
+        contig_id = feature["sequence"]
+        if contig_id in features_by_contig:
+            features_by_contig[contig_id].append(feature)
+
+    ordered_results = []
+
+    for contig_id, full_seq in contigs.items():
+            # Sort features by their start coordinate
+            features = sorted(features_by_contig[contig_id], key=lambda x: x["start"])
+            
+            current_pos = 1  # 1-based index tracking
+            contig_length = len(full_seq)
+
+            for feat in features:
+                start, stop = feat["start"], feat["stop"]
+
+                # If there's space before this annotation, grab the gap segment
+                if start > current_pos:
+                    ordered_results.append(full_seq[current_pos - 1 : start - 1])
+                
+                # Add the annotation segment
+                ordered_results.append(feat["nt"])
+            
+                current_pos = max(current_pos, stop + 1)
+
+            # Grab any remaining trailing sequence as a final gap
+            if current_pos <= contig_length:
+                ordered_results.append(full_seq[current_pos - 1 : contig_length])
+            
+    return ordered_results
 
 
 def get_chunk_embedding(

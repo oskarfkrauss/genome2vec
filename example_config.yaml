@@ -1,6 +1,7 @@
-# An example config for generating embeddings from fasta sequences 
+# An example config for generating annotated embeddings from fasta sequences 
 sequence_dir: /path/to/sequence/fastas
 output_dir: /path/to/output/dir
+annotation_dir: /path/to/annotations/db
 # Choose one of the following transformer models:
 # - NucleotideTransformer_2.5B
 # - DNABERT_S

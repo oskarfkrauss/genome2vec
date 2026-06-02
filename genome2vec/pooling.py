@@ -10,18 +10,18 @@ class GlobalAttentionPooler(nn.Module):
             num_heads: Number of attention heads. 8 is a standard default.
         """
         super().__init__()
-        
+
         # 1. The Learnable Global Query Token
         # Shape: [Batch, SeqLen, HiddenDim] -> [1, 1, 2560]
         self.global_query = nn.Parameter(torch.randn(1, 1, hidden_dim))
-        
+
         # 2. Multi-Head Attention Layer
         self.attention = nn.MultiheadAttention(
             embed_dim=hidden_dim, 
             num_heads=num_heads, 
             batch_first=True
         )
-        
+
         # 3. LayerNorm for gradient stability
         self.norm = nn.LayerNorm(hidden_dim)
 
@@ -47,5 +47,5 @@ class GlobalAttentionPooler(nn.Module):
 
         # Remove the dummy batch and sequence dimensions: [1, 1, 2560] -> [2560]
         pooled_embedding = self.norm(attn_output.squeeze(0).squeeze(0))
-        
+
         return pooled_embedding

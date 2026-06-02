@@ -25,6 +25,8 @@ def test_generate_embeddings(test_inputs_dir, tmp_path):
     config = {
         "sequence_dir": str(sequences_dir),
         "output_dir": str(output_dir),
+        # TODO: needs to be correctly mocked, using actual db for now
+        "annotation_dir": "/home/oskar/data/genome_annotation/db",
         "transformer_model": "ModernBert_DNA_37M_Virus",
     }
 
@@ -36,15 +38,19 @@ def test_generate_embeddings(test_inputs_dir, tmp_path):
     repo_root = Path(__file__).resolve().parents[2]
     script_path = repo_root / "genome2vec" / "generate_embeddings.py"
 
-    subprocess.run(
+    # logic to catch and display subprocess errors
+    result = subprocess.run(
         [
             sys.executable,
             str(script_path),
             str(config_path),
         ],
-        capture_output=True
-    )
-
+            capture_output=True,
+            text=True
+        )
+    if result.returncode != 0:
+        raise RuntimeError(result.stderr)
+    
     expected_tensors = [
         Path(output_dir) / Path(f).with_suffix(".pt")
         for f in os.listdir(sequences_dir)

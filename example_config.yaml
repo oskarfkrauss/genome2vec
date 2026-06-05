@@ -2,6 +2,8 @@
 sequence_dir: /path/to/sequence/fastas
 output_dir: /path/to/output/dir
 annotation_dir: /path/to/annotations/db
+# log to folder in root directory
+logging_dir: ./logs
 # Choose one of the following transformer models:
 # - NucleotideTransformer_2.5B
 # - DNABERT_S

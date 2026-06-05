@@ -32,32 +32,34 @@ def split_sequence_for_tokenizer(annotations: dict, max_length: int) -> list:
         if contig_id in features_by_contig:
             features_by_contig[contig_id].append(feature)
 
-    ordered_results = []
+    ordered_chunks = []
 
     for contig_id, full_seq in contigs.items():
-            # Sort features by their start coordinate
-            features = sorted(features_by_contig[contig_id], key=lambda x: x["start"])
-            
-            current_pos = 1  # 1-based index tracking
-            contig_length = len(full_seq)
+        # sort features by their start coordinate
+        features = sorted(features_by_contig[contig_id], key=lambda x: x["start"])
 
-            for feat in features:
-                start, stop = feat["start"], feat["stop"]
+        current_pos = 1  # 1-based index tracking
+        contig_length = len(full_seq)
 
-                # If there's space before this annotation, grab the gap segment
-                if start > current_pos:
-                    ordered_results.append(full_seq[current_pos - 1 : start - 1])
-                
-                # Add the annotation segment
-                ordered_results.append(feat["nt"])
-            
-                current_pos = max(current_pos, stop + 1)
+        for feat in features:
+            start, stop = feat["start"], feat["stop"]
 
-            # Grab any remaining trailing sequence as a final gap
-            if current_pos <= contig_length:
-                ordered_results.append(full_seq[current_pos - 1 : contig_length])
-            
-    return ordered_results
+            # If there's space before this annotation, grab the gap segment
+            if start > current_pos:
+                chunk_list = split_to_max_length(full_seq[current_pos - 1: start - 1], max_length)
+                ordered_chunks.append(chunk_list)
+
+            # Add the annotation segment
+            chunk_list = split_to_max_length(feat["nt"], max_length)
+            ordered_chunks.append(chunk_list)
+            current_pos = max(current_pos, stop + 1)
+
+        # grab any remaining trailing sequence as a final gap
+        if current_pos <= contig_length:
+            chunk_list = split_to_max_length(full_seq[current_pos - 1:contig_length], max_length)
+            ordered_chunks.append(chunk_list)
+
+    return ordered_chunks
 
 
 def get_chunk_embedding(
@@ -140,6 +142,13 @@ def get_cls_token_embedding(
     return embeddings
 
 
+def split_to_max_length(annotation, max_length):
+    """Splits an annotation into a list of chunks of up to max_length."""
+    if len(annotation) <= max_length:
+        return [annotation]
+    return [annotation[i:i + max_length] for i in range(0, len(annotation), max_length)]
+
+
 TRANSFORMER_MODEL_ARGS = {
     "NucleotideTransformer_2.5B": {
         "remote_path": "InstaDeepAI/nucleotide-transformer-2.5b-multi-species",
@@ -161,5 +170,9 @@ TRANSFORMER_MODEL_ARGS = {
         "remote_path": "LongSafari/hyenadna-medium-160k-seqlen-hf",
         # ModernBert_DNA_37M_Virus allows for 8192 tokens but is tokenised using byte pair encoding.
         # Was trained on ~1kb virus sequences so we use that
-        'max_seq_length': 160000}
+        'max_seq_length': 160000},
+    # **FOR TESTING*** set max length to 25
+    "DNABERT_6mer_tiny": {
+        "remote_path": "zhihan1996/DNA_bert_6",
+        "max_seq_length": 25}
 }

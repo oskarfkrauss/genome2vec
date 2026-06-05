@@ -22,9 +22,11 @@ def mock_sequence() -> str:
 
 @pytest.fixture()
 def mock_annotations_dict(test_inputs_dir) -> dict:
-    with open(os.path.join(test_inputs_dir, 'mock_annotations', 'mock_sequence_2.json'), "r") as f:
+    with open(os.path.join(test_inputs_dir, 'mock_annotations', 'annotation_results',
+                           'mock_sequence_1', 'mock_sequence_1.json'), "r") as f:
         annotation_dict = json.load(f)
     return annotation_dict
+
 
 @pytest.fixture()
 def mock_tokenizer() -> MagicMock:

@@ -1,14 +1,11 @@
 '''
 Integration test for genome2vec.
-
-Input is path to folder with assembly files
-Output is tensors mathcing the name of the assemblies
 '''
 import os
-import subprocess
-import sys
 from pathlib import Path
 import yaml
+
+from genome2vec.generate_embeddings import main
 
 
 def test_generate_embeddings(test_inputs_dir, tmp_path):
@@ -22,35 +19,26 @@ def test_generate_embeddings(test_inputs_dir, tmp_path):
     # mock output directory
     output_dir = tmp_path / "outputs"
 
+    # mock the annotations directory and skip any call to bakta since annotation already exists
+    annotation_dir = test_inputs_dir / 'mock_annotations' / 'db'
+
+    # mock a logging directory
+    logging_dir = tmp_path / "logs"
+
     config = {
         "sequence_dir": str(sequences_dir),
         "output_dir": str(output_dir),
-        # TODO: needs to be correctly mocked, using actual db for now
-        "annotation_dir": "/home/oskar/data/genome_annotation/db",
-        "transformer_model": "ModernBert_DNA_37M_Virus",
+        "annotation_dir": str(annotation_dir),
+        "logging_dir": str(logging_dir),
+        "transformer_model": "DNABERT_6mer_tiny"
     }
 
     config_path = tmp_path / "mock_config.yaml"
     with open(config_path, "w") as f:
         yaml.safe_dump(config, f)
 
-    # path to script under test
-    repo_root = Path(__file__).resolve().parents[2]
-    script_path = repo_root / "genome2vec" / "generate_embeddings.py"
+    main(config_path)
 
-    # logic to catch and display subprocess errors
-    result = subprocess.run(
-        [
-            sys.executable,
-            str(script_path),
-            str(config_path),
-        ],
-            capture_output=True,
-            text=True
-        )
-    if result.returncode != 0:
-        raise RuntimeError(result.stderr)
-    
     expected_tensors = [
         Path(output_dir) / Path(f).with_suffix(".pt")
         for f in os.listdir(sequences_dir)

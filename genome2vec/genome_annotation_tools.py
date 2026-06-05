@@ -1,11 +1,8 @@
 import json
 import os
-import sys
-import shutil
 
 import subprocess
 from pathlib import Path
-import yaml
 
 
 def annotate_genomes(fasta_path: Path, bakta_db_path: str, threads: int):
@@ -23,16 +20,24 @@ def annotate_genomes(fasta_path: Path, bakta_db_path: str, threads: int):
     Returns
     -------
     dict
-        A JSON-serializable dictionary containing the parsed Bakta 
+        A JSON-serializable dictionary containing the parsed Bakta
         annotation results.
     """
-    # save to temporary dirrectory within 'annotations' foler
+    # TODO: catch bakta output for logger
     bakta_db = Path(bakta_db_path)
-    annotation_output_dir = os.path.join(os.path.dirname(bakta_db), 'annotation_results_tmp')
-    os.makedirs(annotation_output_dir, exist_ok=True)
-
+    annotation_output_dir = os.path.join(os.path.dirname(bakta_db), 'annotation_results')
     sample = fasta_path.stem
+    annotation_json_path = os.path.join(annotation_output_dir, sample, f"{sample}.json")
 
+    # exit function if annotation has already been completed
+    if os.path.exists(annotation_json_path):
+        # load the annotations into a dictionary
+        with open(annotation_json_path, "r") as f:
+            bakta_data = json.load(f)
+        return bakta_data
+
+    # otherwise annotate
+    os.makedirs(annotation_output_dir, exist_ok=True)
     cmd = [
         "bakta",
         "--db", str(bakta_db),
@@ -46,13 +51,8 @@ def annotate_genomes(fasta_path: Path, bakta_db_path: str, threads: int):
     if result.returncode != 0:
         raise RuntimeError(result.stderr)
 
-    annotation_json_path = os.path.join(annotation_output_dir, sample, f"{sample}.json")
-
     # load the annotations into a dictionary
     with open(annotation_json_path, "r") as f:
         bakta_data = json.load(f)
-
-    # delete the entire temporary directory and its contents
-    shutil.rmtree(annotation_output_dir)
 
     return bakta_data

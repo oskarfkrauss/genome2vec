@@ -35,8 +35,11 @@ def split_sequence_for_tokenizer(annotations_dict: dict, max_length: int) -> lis
     ordered_segments = []
 
     for contig_id, full_seq in contigs.items():
-        # sort features by their start coordinate
-        features = sorted(features_by_contig[contig_id], key=lambda x: x["start"])
+        # some features are 'gaps' and not very helpful
+        filtered_features = [x for x in features_by_contig[contig_id] if x.get("type") != "gap"]
+
+        # sort by start coordinate, not sure if actually necessary
+        features = sorted(filtered_features, key=lambda x: x["start"])
 
         current_pos = 1  # 1-based index tracking
         contig_length = len(full_seq)
@@ -62,7 +65,7 @@ def split_sequence_for_tokenizer(annotations_dict: dict, max_length: int) -> lis
     return ordered_segments
 
 
-def get_chunk_embedding(
+def get_annotation_embedding(
         tokenizer: AutoTokenizer, model: AutoModel, segment: list, device=None):
     """
     Create an embedding of an annotated segment of a genome sequence (on GPU if available).

@@ -13,7 +13,7 @@ class Logger():
 
         # instantiate logger for class, unique since we use the time
         self._logger = logging.getLogger(f"{__name__}.{log_time}")
-        self._logger.setLevel(logging.INFO)
+        self._logger.setLevel(config['logging_level'])
 
         # set log format
         formatter = logging.Formatter(

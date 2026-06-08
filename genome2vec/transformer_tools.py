@@ -3,7 +3,7 @@ import torch
 from transformers import AutoTokenizer, AutoModel
 
 
-def split_sequence_for_tokenizer(annotations: dict, max_length: int) -> list:
+def split_sequence_for_tokenizer(annotations_dict: dict, max_length: int) -> list:
     """
     TODO: write a descriptive docstring
 
@@ -18,21 +18,21 @@ def split_sequence_for_tokenizer(annotations: dict, max_length: int) -> list:
     Returns
     -------
     List[str]
-        List of sequence chunks suitable for passing individually to the tokenizer.
+        List of sequence segments suitable for chunking and passing to the model.
     """
     if max_length <= 0:
         raise ValueError("max_length must be > 0")
 
     # get contigs to their full sequence strings
-    contigs = {seq["id"]: seq["nt"] for seq in annotations.get("sequences", [])}
+    contigs = {seq["id"]: seq["nt"] for seq in annotations_dict.get("sequences", [])}
     # get features for each contig
     features_by_contig = {contig_id: [] for contig_id in contigs}
-    for feature in annotations.get("features", []):
+    for feature in annotations_dict.get("features", []):
         contig_id = feature["sequence"]
         if contig_id in features_by_contig:
             features_by_contig[contig_id].append(feature)
 
-    ordered_chunks = []
+    ordered_segments = []
 
     for contig_id, full_seq in contigs.items():
         # sort features by their start coordinate
@@ -47,30 +47,35 @@ def split_sequence_for_tokenizer(annotations: dict, max_length: int) -> list:
             # If there's space before this annotation, grab the gap segment
             if start > current_pos:
                 chunk_list = split_to_max_length(full_seq[current_pos - 1: start - 1], max_length)
-                ordered_chunks.append(chunk_list)
+                ordered_segments.append(chunk_list)
 
             # Add the annotation segment
             chunk_list = split_to_max_length(feat["nt"], max_length)
-            ordered_chunks.append(chunk_list)
+            ordered_segments.append(chunk_list)
             current_pos = max(current_pos, stop + 1)
 
         # grab any remaining trailing sequence as a final gap
         if current_pos <= contig_length:
             chunk_list = split_to_max_length(full_seq[current_pos - 1:contig_length], max_length)
-            ordered_chunks.append(chunk_list)
+            ordered_segments.append(chunk_list)
 
-    return ordered_chunks
+    return ordered_segments
 
 
 def get_chunk_embedding(
-        tokenizer: AutoTokenizer, model: AutoModel, sequence: str, device=None):
+        tokenizer: AutoTokenizer, model: AutoModel, segment: list, device=None):
     """
-    Create an embedding of a 'chunk' of a genome sequence (on GPU if available).
+    Create an embedding of an annotated segment of a genome sequence (on GPU if available).
 
     Parameters
     ----------
-    sequence : str
-        A 'chunk' of the genome sequence.
+    tokenizer : AutoTokenizer
+        The tokenizer corresponding to the model we've chosen.
+    model : AutoModel
+        The Transformer embedding model
+    segment : List[str]
+        An annotated segment of the genome, either as a single item list or multiple
+        items, all within the model's context limit
     device : torch.device or None
         Device to run the model on (CPU or GPU). Defaults to CPU.
 
@@ -82,24 +87,28 @@ def get_chunk_embedding(
     if device is None:
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    # Tokenize and move to device, truncate the sequnece so that the model can handle the input,
-    # can result in the last few nucleotides (of the whole seq) not being included in the embedding
-    tokens = tokenizer(sequence, return_tensors="pt", truncation=True)
-    input_ids = tokens["input_ids"].to(device)
-
     # this is some torch logic to put some variables onto GPU accessible memory
     model = model.to(device)
     model.eval()
 
-    with torch.no_grad():
-        outputs = model(
-            input_ids,
-            output_hidden_states=True)
+    all_token_embeddings = []
+    for chunk in segment:
+        # Tokenize and move to device, truncate the sequnece so that the model can handle the input,
+        # can result in the last few nucleotides (of the whole genome) not being included in the
+        # embedding
+        tokens = tokenizer(chunk, return_tensors="pt", truncation=True)
+        input_ids = tokens["input_ids"].to(device)
 
-    # Get last hidden state, remove batch dimension, and move back to cpu
-    embeddings = outputs.hidden_states[-1].squeeze(0).cpu()
+        with torch.no_grad():
+            outputs = model(input_ids, output_hidden_states=True)
 
-    return embeddings
+        # Get last hidden state, remove batch dimension, and move back to cpu
+        token_embeddings = outputs.hidden_states[-1].squeeze(0).cpu()
+        all_token_embeddings.append(token_embeddings)
+
+    # get single hidden_dim vector for the segment to be meaned later
+    segment_embedding = torch.mean(torch.vstack(all_token_embeddings), dim=0)
+    return segment_embedding
 
 
 def get_cls_token_embedding(
@@ -172,7 +181,7 @@ TRANSFORMER_MODEL_ARGS = {
         # Was trained on ~1kb virus sequences so we use that
         'max_seq_length': 160000},
     # **FOR TESTING*** set max length to 25
-    "DNABERT_6mer_tiny": {
-        "remote_path": "zhihan1996/DNA_bert_6",
+    "test_transformer": {
+        "remote_path": "LongSafari/hyenadna-tiny-1k-seqlen-hf",
         "max_seq_length": 25}
 }

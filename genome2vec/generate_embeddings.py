@@ -76,12 +76,12 @@ def main(config_path: Path) -> None:
         logger.info(f'annotating fasta file {fasta_file}')
 
         # run genome annotation using bakta, thread count is hardcoded for now
-        annotations = annotate_genomes(fasta_file, bakta_db_path, 24)
+        annotations_dict = annotate_genomes(fasta_file, bakta_db_path, 24)
 
         logger.info('annotation_complete!')
 
         # use annotations to get coding and non coding chunks
-        chunks = split_sequence_for_tokenizer(annotations, max_seq_length)
+        annotation_segments = split_sequence_for_tokenizer(annotations_dict, max_seq_length)
 
         output_path = Path(config["output_dir"]) / fasta_file.with_suffix(".pt").name
         # exit if embedding has already been completed
@@ -90,13 +90,13 @@ def main(config_path: Path) -> None:
             continue
 
         # generate token embedding for each chunk
-        chunk_embeddings = [
-            get_chunk_embedding(tokenizer, model, chunk)
-            for chunk in chunks
+        annotation_embeddings = [
+            get_chunk_embedding(tokenizer, model, segment)
+            for segment in annotation_segments
         ]
 
         # stack and mean
-        all_chunk_embeddings = torch.vstack(chunk_embeddings)
+        all_chunk_embeddings = torch.vstack(annotation_embeddings)
         genome_embedding = all_chunk_embeddings.mean(dim=0)
 
         # Save output next to input

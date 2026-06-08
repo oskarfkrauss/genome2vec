@@ -30,7 +30,7 @@ def test_generate_embeddings(test_inputs_dir, tmp_path):
         "output_dir": str(output_dir),
         "annotation_dir": str(annotation_dir),
         "logging_dir": str(logging_dir),
-        "transformer_model": "DNABERT_6mer_tiny"
+        "transformer_model": "test_transformer"
     }
 
     config_path = tmp_path / "mock_config.yaml"

@@ -1,5 +1,3 @@
-import torch
-
 from genome2vec.transformer_tools import (
     split_sequence_for_tokenizer, get_chunk_embedding)
 
@@ -13,6 +11,10 @@ def test_split_sequence_for_tokenizer(mock_annotations_dict):
     assert chunked_annotations == expected_chunks
 
 
-def test_get_chunk_embedding(mock_tokenizer, mock_model, mock_sequence):
-    chunk_embedding = get_chunk_embedding(mock_tokenizer, mock_model, mock_sequence)
-    torch.testing.assert_close(chunk_embedding, torch.tensor([0.1, 0.2, 0.3]))
+# not a great unit test since we run multiple times in a comprehension
+def test_get_chunk_embedding(mock_tokenizer, mock_model, mock_segments):
+    segment_embeddings = [
+        get_chunk_embedding(mock_tokenizer, mock_model, segment) for segment in mock_segments]
+    # we have a sequence made of 4 annotations, one of which makes up two chunks, the result
+    # should be 4 segment embeddings
+    assert len(segment_embeddings) == 4

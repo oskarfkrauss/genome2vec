@@ -16,8 +16,22 @@ def test_inputs_dir() -> Path:
 
 
 @pytest.fixture()
-def mock_sequence() -> str:
-    return 'AGTGGACGCATCACTGGTGTTCGGGTTGTCATGCCAATGGCATTGCCCGGT'
+def mock_segments() -> str:
+    return [
+        ["AGTG"], ["AG"], ["TGGACGCA"], ["TCACTGGTGGTCGCGTTGTCATGCC", "AATGGCATTGCACAAA"]
+        ]
+
+
+# fixture to represent a single chunk segment
+@pytest.fixture()
+def mock_chunk_embedding() -> str:
+    return torch.tensor([[0.1, 0.2, 0.3]])
+
+
+# fixture to represent a multi chunk segment
+@pytest.fixture()
+def mock_segment_embedding() -> str:
+    return torch.tensor([[0.1, 0.2, 0.3], [0.1, 0.2, 0.3]])
 
 
 @pytest.fixture()

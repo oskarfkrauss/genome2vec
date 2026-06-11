@@ -2,6 +2,7 @@
 sequence_dir: /path/to/sequence/fastas
 output_dir: /path/to/output/dir
 annotation_dir: /path/to/annotations/db
+annotation_threads: 16
 # log to folder in root directory
 logging_dir: ./logs
 logging_level: DEBUG

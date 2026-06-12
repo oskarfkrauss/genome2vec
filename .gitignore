@@ -1,7 +1,7 @@
 outputs/
 inputs/
 config.yaml
-tmp.py
+tmp*.py
 
 **.egg-info
 **/__pycache__

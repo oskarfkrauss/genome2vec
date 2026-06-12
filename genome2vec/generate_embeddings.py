@@ -107,9 +107,8 @@ def main(config_path: Path) -> None:
             segment_elapsed = time.perf_counter() - segment_start_time
             logger.debug(f'Segment embedded in {segment_elapsed:.2f}s')
 
-        # stack and mean
-        all_chunk_embeddings = torch.vstack(annotation_embeddings)
-        genome_embedding = all_chunk_embeddings.mean(dim=0)
+        # stack all CLS token embeddings
+        genome_embedding = torch.vstack(annotation_embeddings)
 
         # Save output next to input
         os.makedirs(os.path.dirname(output_path), exist_ok=True)

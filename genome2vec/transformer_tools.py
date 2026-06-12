@@ -23,45 +23,14 @@ def split_sequence_for_tokenizer(annotations_dict: dict, max_length: int) -> lis
     if max_length <= 0:
         raise ValueError("max_length must be > 0")
 
-    # get contigs to their full sequence strings
-    contigs = {seq["id"]: seq["nt"] for seq in annotations_dict.get("sequences", [])}
-    # get features for each contig
-    features_by_contig = {contig_id: [] for contig_id in contigs}
-    for feature in annotations_dict.get("features", []):
-        contig_id = feature["sequence"]
-        if contig_id in features_by_contig:
-            features_by_contig[contig_id].append(feature)
-
+    # get features from annotations
+    features = annotations_dict.get("features", [])
+    # some features are 'gaps' and not very helpful, ignore
+    filtered_features = [x for x in features if x.get("type") != "gap"]
     ordered_segments = []
-
-    for contig_id, full_seq in contigs.items():
-        # some features are 'gaps' and not very helpful
-        filtered_features = [x for x in features_by_contig[contig_id] if x.get("type") != "gap"]
-
-        # sort by start coordinate, not sure if actually necessary
-        features = sorted(filtered_features, key=lambda x: x["start"])
-
-        current_pos = 1  # 1-based index tracking
-        contig_length = len(full_seq)
-
-        for feat in features:
-            start, stop = feat["start"], feat["stop"]
-
-            # If there's space before this annotation, grab the gap segment
-            if start > current_pos:
-                chunk_list = split_to_max_length(full_seq[current_pos - 1: start - 1], max_length)
-                ordered_segments.append(chunk_list)
-
-            # Add the annotation segment
-            chunk_list = split_to_max_length(feat["nt"], max_length)
-            ordered_segments.append(chunk_list)
-            current_pos = max(current_pos, stop + 1)
-
-        # grab any remaining trailing sequence as a final gap
-        if current_pos <= contig_length:
-            chunk_list = split_to_max_length(full_seq[current_pos - 1:contig_length], max_length)
-            ordered_segments.append(chunk_list)
-
+    for feat in filtered_features:
+        chunk_list = split_to_max_length(feat["nt"], max_length)
+        ordered_segments.append(chunk_list)
     return ordered_segments
 
 
@@ -88,13 +57,13 @@ def get_annotation_embedding(
         The embedding for the tokenized chunk (shape [seq_len, hidden_dim])
     """
     if device is None:
-        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
     # this is some torch logic to put some variables onto GPU accessible memory
     model = model.to(device)
     model.eval()
 
-    all_token_embeddings = []
+    cls_token_embeddings = []
     for chunk in segment:
         # Tokenize and move to device, truncate the sequnece so that the model can handle the input,
         # can result in the last few nucleotides (of the whole genome) not being included in the
@@ -107,51 +76,12 @@ def get_annotation_embedding(
 
         # Get last hidden state, remove batch dimension, and move back to cpu
         token_embeddings = outputs.hidden_states[-1].squeeze(0).cpu()
-        all_token_embeddings.append(token_embeddings)
+        # keep CLS token only as representation of the chunk
+        cls_token_embeddings.append(token_embeddings[0])
 
     # get single hidden_dim vector for the segment to be meaned later
-    segment_embedding = torch.mean(torch.vstack(all_token_embeddings), dim=0)
+    segment_embedding = torch.mean(torch.vstack(cls_token_embeddings), dim=0)
     return segment_embedding
-
-
-def get_cls_token_embedding(
-        tokenizer: AutoTokenizer, model: AutoModel, sequence: str, device=None):
-    """
-    Create an embedding using only the CLS token (on GPU if available).
-
-    Parameters
-    ----------
-    sequence : str
-        A 'chunk' of the genome sequence.
-    device : torch.device or None
-        Device to run the model on (CPU or GPU). Defaults to CPU.
-
-    Returns
-    -------
-    torch.Tensor
-        CLS embedding (shape [hidden_dim])
-    """
-    if device is None:
-        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
-    # Tokenize and move to device, truncate the sequnece so that the model can handle the input,
-    # can result in the last few nucleotides (of the whole seq) not being included in the embedding
-    tokens = tokenizer(sequence, return_tensors="pt", truncation=True)
-    input_ids = tokens["input_ids"].to(device)
-
-    # this is some torch logic to put some variables onto GPU accessible memory
-    model = model.to(device)
-    model.eval()
-
-    with torch.no_grad():
-        outputs = model(
-            input_ids,
-            output_hidden_states=True)
-
-    # Get CLS token embedding from final layer
-    embeddings = outputs.hidden_states[-1][:, 0, :].squeeze(0).cpu()
-
-    return embeddings
 
 
 def split_to_max_length(annotation, max_length):
@@ -167,6 +97,11 @@ TRANSFORMER_MODEL_ARGS = {
         # Nucleotide Transformer allows for 1000 6-mers but we make slightly smaller to allow for
         # start and end of sequence. Embedding dimension is 2560
         "max_seq_length": 5994},
+    "ProkBERT": {
+        "remote_path": "neuralbioinfo/prokbert-mini-long",
+        # ProkBERT mini-long has a maximum context size of 4096 base paris with an embedding
+        # dimension of 384
+        "max_seq_length": 4096},
     "ModernBert_DNA_37M_Virus": {
         'remote_path': "RaphaelMourad/ModernBert-DNA-v1-37M-virus",
         # ModernBert_DNA_37M_Virus allows for 8192 tokens but is tokenised using byte pair encoding.
@@ -185,6 +120,6 @@ TRANSFORMER_MODEL_ARGS = {
         'max_seq_length': 160000},
     # **FOR TESTING*** set max length to 25
     "test_transformer": {
-        "remote_path": "LongSafari/hyenadna-tiny-1k-seqlen-hf",
+        "remote_path": "neuralbioinfo/prokbert-mini",
         "max_seq_length": 25}
 }

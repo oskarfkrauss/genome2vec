@@ -5,8 +5,7 @@ from genome2vec.transformer_tools import (
 def test_split_sequence_for_tokenizer(mock_annotations_dict):
     chunked_annotations = split_sequence_for_tokenizer(mock_annotations_dict, 25)
     expected_chunks = [
-        ["AGTG"], ["GACGCATCAC"], ["TGGTGTTCGG"], ["ATTGGCATGACAAC"], ["GGCATTGCCCGGT"],
-        ["AG"], ["TGGACGCA"], ["TCACTGGTGGTCGCGTTGTCATGCC", "AATGGCATTGCACAAA"]
+        ['GACGCATCAC'], ['ATTGGCATGACAAC'], ['TGGACGCA'], ['TGGTGGTCGCGTTGTCATGCCAATG', 'GCATTG']
         ]
     assert chunked_annotations == expected_chunks
 

@@ -29,7 +29,9 @@ def test_generate_embeddings(test_inputs_dir, tmp_path):
         "sequence_dir": str(sequences_dir),
         "output_dir": str(output_dir),
         "annotation_dir": str(annotation_dir),
+        "annotation_threads": 8,
         "logging_dir": str(logging_dir),
+        "logging_level": "INFO",
         "transformer_model": "test_transformer"
     }
 

@@ -79,7 +79,7 @@ def get_annotation_embedding(
         # keep CLS token only as representation of the chunk
         cls_token_embeddings.append(token_embeddings[0])
 
-    # get single hidden_dim vector for the segment to be meaned later
+    # get single hidden_dim vector for the segment
     segment_embedding = torch.mean(torch.vstack(cls_token_embeddings), dim=0)
     return segment_embedding
 

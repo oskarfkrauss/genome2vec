@@ -12,7 +12,15 @@ Sequences are parsed from FASTA files, chunked, tokenized then embedded.
 
 ### Chunking
 
-Sequences are chunked according to model context limits
+The framework accepts a standard FASTA files (`.fna`, `.fa`, `.fasta`) containing draft genome assemblies (contigs or scaffolds) which serve as the raw genomic input. These files are then processed as follows
+
+1. Genome annotation using Bakta
+2. Functional segmentation using features from the annotation, non-coding sections are not included
+3. Chunking according to model context limits
+4. Functional gene embeddings generatation using chunks
+   * Single hidden dimension representation per segment
+   * Genome representation is unweighted mean of segment vectors
+5. Analysis done later
 
 ### Tokenisation
 

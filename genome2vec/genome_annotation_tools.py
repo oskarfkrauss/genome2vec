@@ -44,7 +44,6 @@ def annotate_genomes(fasta_path: Path, bakta_db_path: str, threads: int):
         "--output", str(os.path.join(annotation_output_dir, sample)),
         "--threads", str(threads),
         str(fasta_path),
-        "--force"
     ]
     # logic for subprocess to catch errors
     result = subprocess.run(cmd, capture_output=True, text=True)

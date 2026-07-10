@@ -8,6 +8,7 @@ logging_dir: ./logs
 logging_level: DEBUG
 # Choose one of the following transformer models:
 # - NucleotideTransformer_2.5B
+# - ProkBERT
 # - DNABERT_S
 # - HyenaDNA_medium_160k
 # - ModernBert_DNA_37M_Virus

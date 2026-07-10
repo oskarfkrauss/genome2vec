@@ -79,7 +79,7 @@ def main(config_path: Path) -> None:
         # run genome annotation using bakta, thread count is in config for now
         annotations_dict = annotate_genomes(fasta_file, bakta_db_path, annotation_threads)
 
-        logger.info('Annotation_complete!, Preparing sequence for tokeniser')
+        logger.info('Annotation_complete! Preparing sequence for tokeniser')
 
         # use annotations to get coding and non coding chunks
         annotation_segments = split_sequence_for_tokenizer(annotations_dict, max_seq_length)

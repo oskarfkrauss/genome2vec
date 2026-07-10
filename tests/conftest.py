@@ -1,3 +1,5 @@
+import json
+import os
 import pytest
 import torch
 from unittest.mock import MagicMock
@@ -14,8 +16,30 @@ def test_inputs_dir() -> Path:
 
 
 @pytest.fixture()
-def mock_sequence() -> str:
-    return 'AGTGGACGCATCACTGGTGTTCGGGTTGTCATGCCAATGGCATTGCCCGGT'
+def mock_segments() -> str:
+    return [
+        ["AGTG"], ["AG"], ["TGGACGCA"], ["TCACTGGTGGTCGCGTTGTCATGCC", "AATGGCATTGCACAAA"]
+        ]
+
+
+# fixture to represent a single chunk segment
+@pytest.fixture()
+def mock_chunk_embedding() -> str:
+    return torch.tensor([[0.1, 0.2, 0.3]])
+
+
+# fixture to represent a multi chunk segment
+@pytest.fixture()
+def mock_segment_embedding() -> str:
+    return torch.tensor([[0.1, 0.2, 0.3], [0.1, 0.2, 0.3]])
+
+
+@pytest.fixture()
+def mock_annotations_dict(test_inputs_dir) -> dict:
+    with open(os.path.join(test_inputs_dir, 'mock_annotations', 'annotation_results',
+                           'mock_sequence_1', 'mock_sequence_1.json'), "r") as f:
+        annotation_dict = json.load(f)
+    return annotation_dict
 
 
 @pytest.fixture()

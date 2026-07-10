@@ -1,14 +1,18 @@
 outputs/
+inputs/
 config.yaml
+tmp*.py
 
 **.egg-info
 **/__pycache__
 **.pytest_cache
+.vscode
 
 # OS-specific
 .DS_Store
 Thumbs.db
 
 
-#data file
+# data file
 data/
+logs/

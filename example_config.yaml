@@ -1,8 +1,14 @@
-# An example config for generating embeddings from fasta sequences 
+# An example config for generating annotated embeddings from fasta sequences 
 sequence_dir: /path/to/sequence/fastas
 output_dir: /path/to/output/dir
+annotation_dir: /path/to/annotations/db
+annotation_threads: 16
+# log to folder in root directory
+logging_dir: ./logs
+logging_level: DEBUG
 # Choose one of the following transformer models:
 # - NucleotideTransformer_2.5B
+# - ProkBERT
 # - DNABERT_S
 # - HyenaDNA_medium_160k
 # - ModernBert_DNA_37M_Virus

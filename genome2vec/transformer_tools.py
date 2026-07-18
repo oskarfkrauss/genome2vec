@@ -34,10 +34,10 @@ def split_sequence_for_tokenizer(annotations_dict: dict, max_length: int) -> lis
     return ordered_segments
 
 
-def get_annotation_embedding(
-        tokenizer: AutoTokenizer, model: AutoModel, segment: list, device=None):
+def get_annotation_embeddings(
+        tokenizer: AutoTokenizer, model: AutoModel, segments: list, batch_size: int, device=None):
     """
-    Create an embedding of an annotated segment of a genome sequence (on GPU if available).
+    Create sembedding of all annotated segments of a genome sequence (on GPU if available).
 
     Parameters
     ----------
@@ -45,9 +45,12 @@ def get_annotation_embedding(
         The tokenizer corresponding to the model we've chosen.
     model : AutoModel
         The Transformer embedding model
-    segment : List[str]
-        An annotated segment of the genome, either as a single item list or multiple
-        items, all within the model's context limit
+    segments : List[str]
+        Annotated segmenta of the genome, as a list of: a single item list
+        (containing the whole annotation's sequqnce) or a multiple items list
+        (when an annotation's length exceeds model context).
+    batch_size : int
+        Number of chunks to process in parallel
     device : torch.device or None
         Device to run the model on (CPU or GPU). Defaults to CPU.
 
@@ -63,25 +66,51 @@ def get_annotation_embedding(
     model = model.to(device)
     model.eval()
 
-    cls_token_embeddings = []
-    for chunk in segment:
-        # Tokenize and move to device, truncate the sequnece so that the model can handle the input,
-        # can result in the last few nucleotides (of the whole genome) not being included in the
-        # embedding
-        tokens = tokenizer(chunk, return_tensors="pt", truncation=True)
-        input_ids = tokens["input_ids"].to(device)
+    # get chunks into one flat list but keep index of which segment they're in
+    all_chunks = []
+    segment_ids = []
+
+    for segment_idx, segment in enumerate(segments):
+        for chunk in segment:
+            all_chunks.append(chunk)
+            segment_ids.append(segment_idx)
+
+    # create empty list of lists to append the chunk embeddings for each segment
+    segment_embeddings = [
+        [] for _ in range(len(segments))
+    ]
+
+    # process chunks in batches
+    for i in range(0, len(all_chunks), batch_size):
+        batch_chunks = all_chunks[i:i + batch_size]
+        batch_segment_ids = segment_ids[i:i + batch_size]
+
+        tokens = tokenizer(batch_chunks, return_tensors="pt", padding=True)
+        input_ids = tokens['input_ids'].to(device)
+        attention_mask = tokens['attention_mask'].to(device)
 
         with torch.no_grad():
-            outputs = model(input_ids, output_hidden_states=True)
+            outputs = model(input_ids,
+                            attention_mask=attention_mask,
+                            output_hidden_states=True)
 
-        # Get last hidden state, remove batch dimension, and move back to cpu
-        token_embeddings = outputs.hidden_states[-1].squeeze(0).cpu()
-        # keep CLS token only as representation of the chunk
-        cls_token_embeddings.append(token_embeddings[0])
+        # batch token embeddings
+        token_embeddings = outputs.hidden_states[-1]
+        # batch CLS token embeddings
+        cls_token_embeddings = token_embeddings[:, 0, :].cpu()
 
-    # get single hidden_dim vector for the segment
-    segment_embedding = torch.mean(torch.vstack(cls_token_embeddings), dim=0)
-    return segment_embedding
+        # put each chunk embeddings for batch back its segment
+        for emb, segment_idx in zip(cls_token_embeddings, batch_segment_ids):
+            segment_embeddings[segment_idx].append(emb)
+
+    # average chunks for each segment to get single segment representation
+    mean_segment_embeddings = []
+    for embeddings in segment_embeddings:
+        mean_segment_embeddings.append(
+            torch.mean(torch.vstack(embeddings), dim=0)
+            )
+
+    return mean_segment_embeddings
 
 
 def split_to_max_length(annotation, max_length):

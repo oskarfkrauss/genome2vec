@@ -16,7 +16,7 @@ from transformers import AutoTokenizer, AutoModel
 import yaml
 
 from genome2vec.transformer_tools import (
-    get_annotation_embedding,
+    get_annotation_embeddings,
     split_sequence_for_tokenizer,
     TRANSFORMER_MODEL_ARGS
 )
@@ -95,17 +95,9 @@ def main(config_path: Path) -> None:
             logger.info('Embedding already complete, continuing to next sample')
             continue
 
-        annotation_embeddings = []
-        # generate token embedding for each chunk
         logger.info('Generating embedding for sequence')
-        for j, segment in enumerate(annotation_segments):
-            segment_start_time = time.perf_counter()
-            logger.debug('Segment %s is made up of %s chunks which have length %s',
-                         f"{j+1}/{len(annotation_segments)}", len(segment), list(map(len, segment)))
-            annotation_embeddings.append(
-                get_annotation_embedding(tokenizer, model, segment))
-            segment_elapsed = time.perf_counter() - segment_start_time
-            logger.debug(f'Segment embedded in {segment_elapsed:.2f}s')
+        annotation_embeddings = get_annotation_embeddings(
+            tokenizer, model, annotation_segments, batch_size=4, device='cuda:2')
 
         # stack all CLS token embeddings
         genome_embedding = torch.vstack(annotation_embeddings)

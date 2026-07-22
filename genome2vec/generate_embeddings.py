@@ -5,11 +5,13 @@ a Transformer architecture
 Usage:
     python generate_embeddings.py /path/to/config.yaml
 '''
+from concurrent.futures import ThreadPoolExecutor
 import os
 import sys
 import time
 from pathlib import Path
 
+import numpy as np
 import torch
 from transformers import utils as hf_utils
 from transformers import AutoTokenizer, AutoModel
@@ -52,15 +54,21 @@ def main(config_path: Path) -> None:
 
     max_seq_length = TRANSFORMER_MODEL_ARGS[transformer_model]["max_seq_length"]
 
-    # --- Load tokenizer and model ---
+    # --- Load tokenizer, create model for each available device ---
+    devices = config["available_devices"]
+    models = {}
+    for device in devices:
+        model_for_device = AutoModel.from_pretrained(
+            TRANSFORMER_MODEL_ARGS[transformer_model]["remote_path"],
+            trust_remote_code=True)
+        model_for_device.to(device)
+        model_for_device.eval()
+        models[device] = model_for_device
+    
     tokenizer = AutoTokenizer.from_pretrained(
         TRANSFORMER_MODEL_ARGS[transformer_model]["remote_path"],
         trust_remote_code=True
-    )
-    model = AutoModel.from_pretrained(
-        TRANSFORMER_MODEL_ARGS[transformer_model]["remote_path"],
-        trust_remote_code=True
-    )
+        )
 
     # --- Process FASTA files ---
     fasta_files = sorted(
@@ -83,11 +91,12 @@ def main(config_path: Path) -> None:
 
         # use annotations to get coding and non coding chunks
         annotation_segments = split_sequence_for_tokenizer(annotations_dict, max_seq_length)
+        num_segments = len(annotation_segments)
         # count number of chunks
         total_chunks = sum(len(chunk) for chunk in annotation_segments)
 
         logger.info('Sequence split into %s segments formed of %s chunks',
-                    len(annotation_segments), total_chunks)
+                    num_segments, total_chunks)
 
         # exit if embedding has already been completed
         output_path = Path(config["output_dir"]) / fasta_file.with_suffix(".pt").name
@@ -96,11 +105,37 @@ def main(config_path: Path) -> None:
             continue
 
         logger.info('Generating embedding for sequence')
-        annotation_embeddings = get_annotation_embeddings(
-            tokenizer, model, annotation_segments, batch_size=4, device='cuda:2')
+
+        # Parellise across available devices, first split annotations into three roughly equal
+        # batches
+        batch_size = (num_segments + len(devices) - 1) // len(devices)
+        batches = [
+            annotation_segments[i:i + batch_size]
+            for i in range(0, num_segments, batch_size)
+        ]
+
+        def run(batch, device):
+            return get_annotation_embeddings(
+                tokenizer,
+                models[device],
+                batch,
+                batch_size=4,
+                device=device,
+            )
+
+        with ThreadPoolExecutor(max_workers=len(devices)) as executor:
+            results = list(executor.map(run, batches, devices))
+
+        # Flatten if each result is a list
+        annotation_embeddings = [
+            embedding
+            for result in results
+            for embedding in result]
 
         # stack all CLS token embeddings
         genome_embedding = torch.vstack(annotation_embeddings)
+
+        print(genome_embedding.shape)
 
         # Save output next to input
         os.makedirs(os.path.dirname(output_path), exist_ok=True)

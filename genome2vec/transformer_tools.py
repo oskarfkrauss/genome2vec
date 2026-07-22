@@ -37,7 +37,7 @@ def split_sequence_for_tokenizer(annotations_dict: dict, max_length: int) -> lis
 def get_annotation_embeddings(
         tokenizer: AutoTokenizer, model: AutoModel, segments: list, batch_size: int, device=None):
     """
-    Create sembedding of all annotated segments of a genome sequence (on GPU if available).
+    Create embedding of all annotated segments of a genome sequence (on GPU if available).
 
     Parameters
     ----------
@@ -61,10 +61,6 @@ def get_annotation_embeddings(
     """
     if device is None:
         device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-
-    # this is some torch logic to put some variables onto GPU accessible memory
-    model = model.to(device)
-    model.eval()
 
     # get chunks into one flat list but keep index of which segment they're in
     all_chunks = []

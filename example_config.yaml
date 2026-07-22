@@ -3,6 +3,12 @@ sequence_dir: /path/to/sequence/fastas
 output_dir: /path/to/output/dir
 annotation_dir: /path/to/annotations/db
 annotation_threads: 16
+# for parellising embedding generation across multiple GPUs, on the machine we have available
+# there are three cuda GPUs but anoter one only has one.
+available_devices:
+  - cuda:0
+  - cuda:1
+  - cuda:2
 # log to folder in root directory
 logging_dir: ./logs
 logging_level: DEBUG

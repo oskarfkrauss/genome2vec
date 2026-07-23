@@ -26,7 +26,7 @@ def annotate_genomes(fasta_path: Path, bakta_db_path: str, threads: int):
     # TODO: catch bakta output for logger
     bakta_db = Path(bakta_db_path)
     annotation_output_dir = os.path.join(os.path.dirname(bakta_db), 'annotation_results')
-    sample = fasta_path.stem
+    sample = Path(fasta_path).stem
     annotation_json_path = os.path.join(annotation_output_dir, sample, f"{sample}.json")
 
     # exit function if annotation has already been completed
@@ -44,6 +44,7 @@ def annotate_genomes(fasta_path: Path, bakta_db_path: str, threads: int):
         "--output", str(os.path.join(annotation_output_dir, sample)),
         "--threads", str(threads),
         str(fasta_path),
+        "--force"
     ]
     # logic for subprocess to catch errors
     result = subprocess.run(cmd, capture_output=True, text=True)

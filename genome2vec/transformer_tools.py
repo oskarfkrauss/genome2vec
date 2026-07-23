@@ -3,14 +3,41 @@ import torch
 from transformers import AutoTokenizer, AutoModel
 
 
-def split_sequence_for_tokenizer(annotations_dict: dict, max_length: int) -> list:
-    """
-    TODO: write a descriptive docstring
+def parse_fasta(file_path: str):
+    '''
+    Parse fasta file (.fna or .fasta) file into a single string
 
     Parameters
     ----------
-    annotations : dict
-        Annotations of the sequence produced by Baka.
+    file_path : str
+        Path to the fasta assembly file
+
+    Returns
+    -------
+    seq : str
+        The sequence parsed into a single string and capitalised
+    '''
+    with open(file_path) as f:
+        seq = ''
+        for line in f:
+            line = line.rstrip()
+            # ignore lines containing read headers
+            if line.startswith('>'):
+                continue
+            else:
+                seq = seq + line
+    return seq.upper()
+
+
+def split_sequence_for_tokenizer(sequence: str, max_length: int) -> list:
+    """
+    Split a long genome sequence string into a list of substrings each no longer than
+    max_length
+
+    Parameters
+    ----------
+    sequence : str
+        Raw sequence. This will be normalized to uppercase.
     max_length : int
         Maximum length (in characters) of each chunk. Choose this to match the tokenizer's
         maximum input size (or slightly smaller).
@@ -18,24 +45,24 @@ def split_sequence_for_tokenizer(annotations_dict: dict, max_length: int) -> lis
     Returns
     -------
     List[str]
-        List of sequence segments suitable for chunking and passing to the model.
+        List of sequence chunks suitable for passing individually to the tokenizer.
     """
     if max_length <= 0:
         raise ValueError("max_length must be > 0")
 
-    # get features from annotations
-    features = annotations_dict.get("features", [])
-    # some features are 'gaps' and not very helpful, ignore
-    filtered_features = [x for x in features if x.get("type") != "gap"]
-    ordered_segments = []
-    for feat in filtered_features:
-        chunk_list = split_to_max_length(feat["nt"], max_length)
-        ordered_segments.append(chunk_list)
-    return ordered_segments
+    chunks = []
+    step = max_length
+    start = 0
+    seq_len = len(sequence)
+    while start < seq_len:
+        end = start + max_length
+        chunks.append(sequence[start:end])
+        start += step
+    return chunks
 
 
-def get_annotation_embedding(
-        tokenizer: AutoTokenizer, model: AutoModel, segment: list, device=None):
+def get_chunk_embedding(
+        tokenizer: AutoTokenizer, model: AutoModel, chunk: list, device=None):
     """
     Create an embedding of an annotated segment of a genome sequence (on GPU if available).
 
@@ -63,25 +90,16 @@ def get_annotation_embedding(
     model = model.to(device)
     model.eval()
 
-    cls_token_embeddings = []
-    for chunk in segment:
-        # Tokenize and move to device, truncate the sequnece so that the model can handle the input,
-        # can result in the last few nucleotides (of the whole genome) not being included in the
-        # embedding
-        tokens = tokenizer(chunk, return_tensors="pt", truncation=True)
-        input_ids = tokens["input_ids"].to(device)
+    tokens = tokenizer(chunk, return_tensors="pt")
+    input_ids = tokens["input_ids"].to(device)
 
-        with torch.no_grad():
-            outputs = model(input_ids, output_hidden_states=True)
+    with torch.no_grad():
+        outputs = model(input_ids, output_hidden_states=True)
 
-        # Get last hidden state, remove batch dimension, and move back to cpu
-        token_embeddings = outputs.hidden_states[-1].squeeze(0).cpu()
-        # keep CLS token only as representation of the chunk
-        cls_token_embeddings.append(token_embeddings[0])
-
-    # get single hidden_dim vector for the segment to be meaned later
-    segment_embedding = torch.mean(torch.vstack(cls_token_embeddings), dim=0)
-    return segment_embedding
+    # Get last hidden state, remove batch dimension, and move back to cpu
+    token_embeddings = outputs.hidden_states[-1].squeeze(0).cpu()
+    # return CLS token only as representation of the chunk
+    return token_embeddings[0]
 
 
 def split_to_max_length(annotation, max_length):
@@ -99,7 +117,7 @@ TRANSFORMER_MODEL_ARGS = {
         "max_seq_length": 5994},
     "ProkBERT": {
         "remote_path": "neuralbioinfo/prokbert-mini-long",
-        # ProkBERT mini-long has a maximum context size of 4096 base paris with an embedding
+        # ProkBERT mini-long has a maximum context size of 4096 base pairs with an embedding
         # dimension of 384
         "max_seq_length": 4096},
     "ModernBert_DNA_37M_Virus": {

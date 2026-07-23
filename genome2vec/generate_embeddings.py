@@ -16,11 +16,12 @@ from transformers import AutoTokenizer, AutoModel
 import yaml
 
 from genome2vec.transformer_tools import (
-    get_annotation_embedding,
+    parse_fasta,
+    get_chunk_embedding,
     split_sequence_for_tokenizer,
     TRANSFORMER_MODEL_ARGS
 )
-from genome2vec.genome_annotation_tools import annotate_genomes
+
 from genome2vec.logger import Logger
 
 
@@ -74,20 +75,13 @@ def main(config_path: Path) -> None:
     for i, fasta_file in enumerate(fasta_files):
         start_time = time.perf_counter()
 
-        logger.info(f'Annotating fasta file {fasta_file.name}')
+        # parse entire assembly into single string
+        genome_sequence = parse_fasta(str(fasta_file))
 
-        # run genome annotation using bakta, thread count is in config for now
-        annotations_dict = annotate_genomes(fasta_file, bakta_db_path, annotation_threads)
+        # split into tokenizer-friendly chunks
+        chunks = split_sequence_for_tokenizer(genome_sequence, max_seq_length)
 
-        logger.info('Annotation_complete! Preparing sequence for tokeniser')
-
-        # use annotations to get coding and non coding chunks
-        annotation_segments = split_sequence_for_tokenizer(annotations_dict, max_seq_length)
-        # count number of chunks
-        total_chunks = sum(len(chunk) for chunk in annotation_segments)
-
-        logger.info('Sequence split into %s segments formed of %s chunks',
-                    len(annotation_segments), total_chunks)
+        logger.info('Sequence split into %s chunks', len(chunks))
 
         # exit if embedding has already been completed
         output_path = Path(config["output_dir"]) / fasta_file.with_suffix(".pt").name
@@ -95,20 +89,18 @@ def main(config_path: Path) -> None:
             logger.info('Embedding already complete, continuing to next sample')
             continue
 
-        annotation_embeddings = []
+        chunk_embeddings = []
         # generate token embedding for each chunk
         logger.info('Generating embedding for sequence')
-        for j, segment in enumerate(annotation_segments):
+        for segment in chunks:
             segment_start_time = time.perf_counter()
-            logger.debug('Segment %s is made up of %s chunks which have length %s',
-                         f"{j+1}/{len(annotation_segments)}", len(segment), list(map(len, segment)))
-            annotation_embeddings.append(
-                get_annotation_embedding(tokenizer, model, segment))
+            chunk_embeddings.append(
+                get_chunk_embedding(tokenizer, model, segment))
             segment_elapsed = time.perf_counter() - segment_start_time
             logger.debug(f'Segment embedded in {segment_elapsed:.2f}s')
 
         # stack all CLS token embeddings
-        genome_embedding = torch.vstack(annotation_embeddings)
+        genome_embedding = torch.vstack(chunk_embeddings)
 
         # Save output next to input
         os.makedirs(os.path.dirname(output_path), exist_ok=True)

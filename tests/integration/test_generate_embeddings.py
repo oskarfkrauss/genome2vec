@@ -3,14 +3,19 @@ Integration test for genome2vec.
 '''
 import os
 from pathlib import Path
+from unittest.mock import patch
 import yaml
 
 from genome2vec.generate_embeddings import main
 
 
-def test_generate_embeddings(test_inputs_dir, tmp_path):
+@patch("genome2vec.generate_embeddings.annotate_genome")
+def test_generate_embeddings(mock_annotate, test_inputs_dir, tmp_path):
     """
     End-to-end integration test for generate_embeddings.py.
+
+    For annotations, we test the case where we have a downloaded annotation and also when we
+    run bakta to generate the annotation.
     """
     # -- Generate mock config.yaml --
     # Mock input FASTA directory
@@ -20,16 +25,21 @@ def test_generate_embeddings(test_inputs_dir, tmp_path):
     output_dir = tmp_path / "outputs"
 
     # mock the annotations directory and skip any call to bakta since annotation already exists
-    annotation_dir = test_inputs_dir / 'mock_annotations' / 'db'
+    annotation_dir = test_inputs_dir / 'mock_annotations'
 
     # mock a logging directory
     logging_dir = tmp_path / "logs"
 
+    # Patch annotate_genome
+    mock_annotate.return_value = os.path.join(annotation_dir, 'mock_genome_2.gff3')
+
     config = {
         "sequence_dir": str(sequences_dir),
-        "output_dir": str(output_dir),
         "annotation_dir": str(annotation_dir),
         "annotation_threads": 8,
+        "annotation_db": "",
+        "output_dir": str(output_dir),
+        "available_devices": ['cuda:0'],
         "logging_dir": str(logging_dir),
         "logging_level": "INFO",
         "transformer_model": "test_transformer"

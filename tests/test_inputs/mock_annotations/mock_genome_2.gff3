@@ -1,0 +1,13 @@
+##gff-version 3
+##feature-ontology https://github.com/The-Sequence-Ontology/SO-Ontologies/blob/v3.1/so.obo
+# Annotated with Bakta
+# Software: v1.12.0
+# Database: v6.0, full
+# DOI: 10.1099/mgen.0.000685
+# URL: github.com/oschwengers/bakta
+##sequence-region contig_1 1 231767
+NODE_1_length_51_cov_50	PATRIC	region	1	51	.	+	.	ID=NODE_1_length_51_cov_50;Name=NODE_1_length_51_cov_50
+NODE_1_length_51_cov_50	PATRIC	CDS	5	14	.	+	.	attr1;attr2;attr3
+NODE_1_length_51_cov_50	PATRIC	CDS	17	22	.	+	0	attr1;attr2;attr3
+NODE_1_length_51_cov_50	PATRIC	CDS	25	38	.	-	0	attr1;attr2;attr3
+NODE_1_length_51_cov_50	PATRIC	CDS	42	47	.	-	0	attr1;attr2;attr3

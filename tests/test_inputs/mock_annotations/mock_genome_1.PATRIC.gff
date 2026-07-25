@@ -1,0 +1,9 @@
+##gff-version 3
+#Genome: mock_genome_1|really nice *strain* of bacteria
+#Date:24/07/2026
+
+NODE_1_length_51_cov_50	PATRIC	CDS	5	14	.	+	0	attr1;attr2;attr3
+NODE_1_length_51_cov_50	PATRIC	gap	18	18	.	.	.	attr1;attr2;attr3
+NODE_1_length_51_cov_50	PATRIC	CDS	25	38	.	-	0	attr1;attr2;attr3
+NODE_1_length_51_cov_50	PATRIC	CDS	3	10	.	+	0	attr1;attr2;attr3
+NODE_1_length_51_cov_50	PATRIC	CDS	15	45	.	+	0	attr1;attr2;attr3

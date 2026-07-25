@@ -11,7 +11,6 @@ import sys
 import time
 from pathlib import Path
 
-import numpy as np
 import torch
 from transformers import utils as hf_utils
 from transformers import AutoTokenizer, AutoModel
@@ -19,10 +18,9 @@ import yaml
 
 from genome2vec.transformer_tools import (
     get_annotation_embeddings,
-    split_sequence_for_tokenizer,
     TRANSFORMER_MODEL_ARGS
 )
-from genome2vec.genome_annotation_tools import annotate_genomes
+from genome2vec.genome_annotation_tools import annotate_genome, split_sequence_for_tokenizer
 from genome2vec.logger import Logger
 
 
@@ -45,8 +43,9 @@ def main(config_path: Path) -> None:
 
     transformer_model = config["transformer_model"]
     sequence_dir = Path(config["sequence_dir"])
+    annotation_dir = Path(config["annotation_dir"])
     # for genome annotation
-    bakta_db_path = config["annotation_dir"]
+    bakta_db_path = config["annotation_db"]
     annotation_threads = config["annotation_threads"]
 
     if not sequence_dir.exists():
@@ -64,7 +63,7 @@ def main(config_path: Path) -> None:
         model_for_device.to(device)
         model_for_device.eval()
         models[device] = model_for_device
-    
+
     tokenizer = AutoTokenizer.from_pretrained(
         TRANSFORMER_MODEL_ARGS[transformer_model]["remote_path"],
         trust_remote_code=True
@@ -79,18 +78,29 @@ def main(config_path: Path) -> None:
     if not fasta_files:
         raise RuntimeError(f"No FASTA files found in {sequence_dir}")
 
-    for i, fasta_file in enumerate(fasta_files):
+    for i, fasta_path in enumerate(fasta_files):
         start_time = time.perf_counter()
 
-        logger.info(f'Annotating fasta file {fasta_file.name}')
+        # sometimes downloaded fastas are empty due to some poor ftp management from the database
+        # skip these files and continue
+        if os.path.getsize(fasta_path) < 50:
+            continue
 
-        # run genome annotation using bakta, thread count is in config for now
-        annotations_dict = annotate_genomes(fasta_file, bakta_db_path, annotation_threads)
+        logger.info(f'Loading annotations for genome {fasta_path.name}')
 
-        logger.info('Annotation_complete! Preparing sequence for tokeniser')
+        annotation_table_path = os.path.join(annotation_dir, f"{fasta_path.stem}.PATRIC.gff")
+        # we either fetch annotations we've downloaded from the database or annotate ourselves
+        # using Bakta.
+        if not os.path.exists(annotation_table_path):
+            # run genome annotation using bakta, thread count is in config for now
+            annotation_table_path = annotate_genome(fasta_path, bakta_db_path, annotation_threads)
+
+        logger.info('Annotations loaded! Preparing sequence for tokeniser')
 
         # use annotations to get coding and non coding chunks
-        annotation_segments = split_sequence_for_tokenizer(annotations_dict, max_seq_length)
+        annotation_segments = split_sequence_for_tokenizer(
+            annotation_table_path, fasta_path, max_seq_length)
+
         num_segments = len(annotation_segments)
         # count number of chunks
         total_chunks = sum(len(chunk) for chunk in annotation_segments)
@@ -99,7 +109,7 @@ def main(config_path: Path) -> None:
                     num_segments, total_chunks)
 
         # exit if embedding has already been completed
-        output_path = Path(config["output_dir"]) / fasta_file.with_suffix(".pt").name
+        output_path = Path(config["output_dir"]) / fasta_path.with_suffix(".pt").name
         if os.path.exists(output_path):
             logger.info('Embedding already complete, continuing to next sample')
             continue
@@ -135,8 +145,6 @@ def main(config_path: Path) -> None:
         # stack all CLS token embeddings
         genome_embedding = torch.vstack(annotation_embeddings)
 
-        print(genome_embedding.shape)
-
         # Save output next to input
         os.makedirs(os.path.dirname(output_path), exist_ok=True)
         torch.save(genome_embedding, output_path)
@@ -144,7 +152,7 @@ def main(config_path: Path) -> None:
         elapsed = time.perf_counter() - start_time
         logger.info(
             f"[{i+1}/{len(fasta_files)}] "
-            f"{fasta_file.name} embedded in {elapsed:.2f}s"
+            f"{fasta_path.name} embedded in {elapsed:.2f}s"
         )
 
 

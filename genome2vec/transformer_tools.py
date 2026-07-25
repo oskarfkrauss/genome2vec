@@ -1,37 +1,5 @@
-
 import torch
 from transformers import AutoTokenizer, AutoModel
-
-
-def split_sequence_for_tokenizer(annotations_dict: dict, max_length: int) -> list:
-    """
-    TODO: write a descriptive docstring
-
-    Parameters
-    ----------
-    annotations : dict
-        Annotations of the sequence produced by Baka.
-    max_length : int
-        Maximum length (in characters) of each chunk. Choose this to match the tokenizer's
-        maximum input size (or slightly smaller).
-
-    Returns
-    -------
-    List[str]
-        List of sequence segments suitable for chunking and passing to the model.
-    """
-    if max_length <= 0:
-        raise ValueError("max_length must be > 0")
-
-    # get features from annotations
-    features = annotations_dict.get("features", [])
-    # some features are 'gaps' and not very helpful, ignore
-    filtered_features = [x for x in features if x.get("type") != "gap"]
-    ordered_segments = []
-    for feat in filtered_features:
-        chunk_list = split_to_max_length(feat["nt"], max_length)
-        ordered_segments.append(chunk_list)
-    return ordered_segments
 
 
 def get_annotation_embeddings(

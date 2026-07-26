@@ -81,18 +81,22 @@ def main(config_path: Path) -> None:
     for i, fasta_path in enumerate(fasta_files):
         start_time = time.perf_counter()
 
+        logger.info(f'Generating embedding for genome {fasta_path.name}')
+
         # sometimes downloaded fastas are empty due to some poor ftp management from the database
         # skip these files and continue
         if os.path.getsize(fasta_path) < 50:
+            logger.info('Empty fasta, contining to next sample')
             continue
 
         logger.info(f'Loading annotations for genome {fasta_path.name}')
 
         annotation_table_path = os.path.join(annotation_dir, f"{fasta_path.stem}.PATRIC.gff")
         # we either fetch annotations we've downloaded from the database or annotate ourselves
-        # using Bakta. Sometimes downloaded gffs are empty, skip these files and annotate
+        # using Bakta. Sometimes downloaded gffs are empty, skip these files and annotate with Bakta
         if not os.path.exists(annotation_table_path) or \
             os.path.getsize(annotation_table_path) < 100:
+            logger.info(f'No annotations for {fasta_path.name}, running Bakta')
             # run genome annotation using bakta, thread count is in config for now
             annotation_table_path = annotate_genome(fasta_path, bakta_db_path, annotation_threads)
 

@@ -1,5 +1,6 @@
 import csv
 import os
+import shutil
 import subprocess
 from pathlib import Path
 
@@ -50,6 +51,10 @@ def annotate_genome(fasta_path: Path, bakta_db_path: str, threads: int):
         raise RuntimeError(result.stderr)
 
     # move gff3 file to annotation output dir, delete other files
+    bakta_output_dir = os.path.join(annotation_output_dir, sample)
+    bakta_annotation_output = os.path.join(bakta_output_dir, f"{sample}.gff3")
+    shutil.move(bakta_annotation_output, annotation_table_path)
+    shutil.rmtree(bakta_output_dir)
 
     return annotation_table_path
 

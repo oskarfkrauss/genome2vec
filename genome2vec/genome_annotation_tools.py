@@ -25,9 +25,10 @@ def annotate_genome(fasta_path: Path, bakta_db_path: str, threads: int):
     """
     # TODO: catch bakta output for logger
     bakta_db = Path(bakta_db_path)
-    annotation_output_dir = os.path.join(os.path.dirname(bakta_db), 'annotation_results')
+    annotation_output_dir = os.path.dirname(fasta_path).replace(
+        'genome_sequences', 'genome_annotations')
     sample = fasta_path.stem
-    annotation_table_path = os.path.join(annotation_output_dir, sample, f"{sample}.gff3")
+    annotation_table_path = os.path.join(annotation_output_dir, f"{sample}.gff3")
 
     # exit function if annotation has already been completed
     if os.path.exists(annotation_table_path):
@@ -47,6 +48,8 @@ def annotate_genome(fasta_path: Path, bakta_db_path: str, threads: int):
     result = subprocess.run(cmd, capture_output=True, text=True)
     if result.returncode != 0:
         raise RuntimeError(result.stderr)
+
+    # move gff3 file to annotation output dir, delete other files
 
     return annotation_table_path
 
@@ -75,6 +78,7 @@ def split_sequence_for_tokenizer(
         raise ValueError("max_length must be > 0")
 
     genome = parse_fasta(fasta_path)
+    contig_map = {f"contig_{i+1}": key for i, key in enumerate(genome)}
     ordered_segments = []
 
     # read gff file line-by-line
@@ -82,6 +86,11 @@ def split_sequence_for_tokenizer(
         reader = csv.reader(f, delimiter='\t')
 
         for row in reader:
+
+            # stop when the FASTA section begins (for gff3 tables)
+            if row == ["##FASTA"]:
+                return ordered_segments
+
             # skip comments, metadata, or incomplete rows
             if not row or row[0].startswith('#'):
                 continue
@@ -94,10 +103,15 @@ def split_sequence_for_tokenizer(
             end = int(row[4])
             strand = row[6]
 
-            # ensure contig match exists in FASTA and we're not extracting unhelpful rows like
-            # like the whole contig or a gap
+            # get contig id of fasta that matches row in annotation table
+            # First try your existing substring match
             contig_id = next((key for key in genome if key in seqid), None)
-            if contig_id is None or feature_type in ['region', 'gap']:
+
+            # If that fails, try the contig_N mapping
+            if contig_id is None:
+                contig_id = contig_map.get(seqid)
+
+            if feature_type in {"region", "gap"}:
                 continue
 
             # extract sequence from contig

@@ -90,8 +90,9 @@ def main(config_path: Path) -> None:
 
         annotation_table_path = os.path.join(annotation_dir, f"{fasta_path.stem}.PATRIC.gff")
         # we either fetch annotations we've downloaded from the database or annotate ourselves
-        # using Bakta.
-        if not os.path.exists(annotation_table_path):
+        # using Bakta. Sometimes downloaded gffs are empty, skip these files and annotate
+        if not os.path.exists(annotation_table_path) or \
+            os.path.getsize(annotation_table_path) < 100:
             # run genome annotation using bakta, thread count is in config for now
             annotation_table_path = annotate_genome(fasta_path, bakta_db_path, annotation_threads)
 
